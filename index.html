@@ -68,10 +68,10 @@ html, body {
 }
 
 #admin-trigger {
-  position: absolute;
+  position: fixed;
   top: 0; right: 0;
   width: 70px; height: 70px;
-  z-index: 20;
+  z-index: 999;
 }
 
 /* Suit flash feedback */
@@ -379,7 +379,6 @@ html, body {
     <!-- value hotspots injected by JS -->
   </div>
   <div id="suit-flash"></div>
-  <div id="admin-trigger"></div>
 </div>
 
 <!-- ═══ WHATCARD VIEW ═════════════════════════════ -->
@@ -510,6 +509,9 @@ html, body {
 
 <div id="toast"></div>
 
+<!-- Fixed admin trigger — always on top, works from any view -->
+<div id="admin-trigger"></div>
+
 <script>
 // ═══════════════════════════════════════════════════
 // CONSTANTS
@@ -556,6 +558,27 @@ let backTapCount = 0, backTapTimer = null, lastZ = 0;
 let shakeLog = [], shakeBlock = false;
 let drag = null;
 
+// ── WhatCard active-state persistence ──────────────
+const ACTIVE_KEY = 'wc_active';
+
+function saveActiveState() {
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify({ suit: selectedSuit, value: selectedValue }));
+}
+function clearActiveState() {
+  localStorage.removeItem(ACTIVE_KEY);
+}
+function loadActiveState() {
+  try { const s = localStorage.getItem(ACTIVE_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
+
+// Block the back button while on WhatCard
+function lockBackButton() {
+  history.pushState({ wc: true }, '');
+}
+window.addEventListener('popstate', () => {
+  if (isWhatcardActive()) history.pushState({ wc: true }, '');
+});
+
 // ═══════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════
@@ -584,6 +607,19 @@ function init() {
   buildDeck();
   bindHotspots();
   bindAdminTrigger();
+
+  // Restore WhatCard if app was closed while on joker screen
+  const saved = loadActiveState();
+  if (saved && saved.suit && saved.value) {
+    selectedSuit  = saved.suit;
+    selectedValue = saved.value;
+    isRevealed    = false;
+    buildDeck();
+    document.getElementById('shake-hint').style.display = '';
+    document.getElementById('revealed-label').classList.remove('show');
+    showView('whatcard');
+    lockBackButton();
+  }
 
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -763,7 +799,9 @@ function enterWhatCard() {
   buildDeck();
   document.getElementById('shake-hint').style.display = '';
   document.getElementById('revealed-label').classList.remove('show');
+  saveActiveState();
   showView('whatcard');
+  lockBackButton();
 }
 
 function vibratePulses(n) {
@@ -778,6 +816,7 @@ function vibratePulses(n) {
 // ═══════════════════════════════════════════════════
 function bindAdminTrigger() {
   document.getElementById('admin-trigger').addEventListener('pointerup', () => {
+    if (isAdminActive()) return; // Don't re-trigger from within admin
     adminTaps++;
     clearTimeout(adminTimer);
     adminTimer = setTimeout(() => { adminTaps = 0; }, 2000);
@@ -886,6 +925,7 @@ async function revealCard() {
 // RESET
 // ═══════════════════════════════════════════════════
 function resetTrick() {
+  clearActiveState();
   selectedSuit = selectedValue = null;
   isRevealed   = false;
   buildDeck();
