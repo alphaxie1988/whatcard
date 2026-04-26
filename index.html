@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WhatCard">
+<title>WhatCard</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0a0a0a">
+<style>
+:root {
+  --gold: #e8c84a;
+  --dark-bg: #0a0a14;
+  --card-blue: #1a237e;
+  --red: #c0392b;
+  --black-text: #1a1a1a;
+}
+
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  background: #000;
+}
+
+/* ── VIEWS ─────────────────────────────────── */
+.view { position: fixed; inset: 0; display: none; flex-direction: column; }
+.view.active { display: flex; }
+
+/* ── HOME VIEW ──────────────────────────────── */
+#view-home { background: #111; }
+
+#home-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0a0a14, #1a1a2e);
+  background-size: cover;
+  background-position: center top;
+}
+
+#home-no-bg {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.2);
+  font-size: 14px; gap: 12px; text-align: center; padding: 40px;
+}
+#home-no-bg .icon { font-size: 48px; }
+
+#hotspot-layer {
+  position: absolute; inset: 0;
+  z-index: 10;
+}
+
+.hotspot {
+  position: absolute;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#admin-trigger {
+  position: absolute;
+  top: 0; right: 0;
+  width: 70px; height: 70px;
+  z-index: 20;
+}
+
+/* Suit flash feedback */
+#suit-flash {
+  position: absolute;
+  bottom: 32px; left: 24px;
+  display: flex; align-items: baseline; gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+  transition: opacity 0.2s;
+  filter: drop-shadow(0 2px 12px rgba(0,0,0,0.6));
+}
+#suit-flash .sf-val {
+  font-size: 36px; font-weight: 800;
+  font-family: Georgia, serif; line-height: 1;
+}
+#suit-flash .sf-sym {
+  font-size: 30px; line-height: 1;
+}
+#suit-flash.show { opacity: 1; transition: opacity 0s; }
+
+/* ── WHATCARD VIEW ──────────────────────────── */
+#view-whatcard {
+  background: var(--dark-bg);
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#view-whatcard::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 35% 15%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 65% 85%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 75% 40%, rgba(255,255,255,0.2), transparent),
+    radial-gradient(1px 1px at 25% 55%, rgba(255,255,255,0.3), transparent);
+}
+
+#wc-title {
+  position: absolute; top: 60px;
+  font-size: 11px; letter-spacing: 5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.15); font-weight: 300;
+}
+
+#deck-scene {
+  position: relative;
+  width: 160px; height: 224px;
+  perspective: 800px;
+  margin-bottom: 60px;
+}
+
+.c {
+  position: absolute;
+  width: 160px; height: 224px;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.c-back {
+  background: var(--card-blue);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+}
+.c-back::before {
+  content: ''; position: absolute; inset: 0; border-radius: 12px;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px);
+}
+.c-back::after {
+  content: ''; position: absolute; inset: 8px;
+  border-radius: 7px; border: 1.5px solid rgba(255,255,255,0.12);
+}
+
+.c-joker {
+  background: #fff;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 4px;
+}
+.c-joker .joker-symbol { font-size: 80px; line-height: 1; }
+.c-joker .joker-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #555; font-family: serif; }
+.c-joker::before { content: 'JOKER'; position: absolute; top: 10px; left: 12px; font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #888; font-family: serif; }
+.c-joker::after  { content: 'JOKER'; position: absolute; bottom: 10px; right: 12px; font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #888; font-family: serif; transform: rotate(180deg); }
+
+.c-face {
+  background: #fff;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.08);
+  display: flex; flex-direction: column; padding: 10px;
+}
+.cf-corner { display: flex; flex-direction: column; align-items: center; line-height: 1.1; align-self: flex-start; }
+.cf-corner.flip { align-self: flex-end; transform: rotate(180deg); margin-top: auto; }
+.cf-val { font-size: 24px; font-weight: 800; font-family: Georgia, serif; }
+.cf-suit { font-size: 16px; }
+.cf-center { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 88px; line-height: 1; }
+.suit-red { color: var(--red); }
+.suit-black { color: var(--black-text); }
+
+#shake-hint {
+  position: absolute; bottom: 80px;
+  font-size: 12px; letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  animation: breathe 2.5s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.03); }
+}
+
+#revealed-label {
+  position: absolute; bottom: 44px;
+  font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold); opacity: 0; transition: opacity 0.6s;
+}
+#revealed-label.show { opacity: 1; }
+
+/* ── ADMIN VIEW ─────────────────────────────── */
+#view-admin {
+  background: #0d0d1a; color: #fff;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+
+.adm-scroll { padding: 0 0 48px; }
+
+.adm-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 56px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: sticky; top: 0; background: #0d0d1a; z-index: 10;
+}
+.adm-bar h1 { font-size: 17px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+.adm-close {
+  background: rgba(255,255,255,0.1); border: none;
+  width: 34px; height: 34px; border-radius: 50%;
+  color: #fff; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.adm-section {
+  margin: 20px 16px 0;
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px; overflow: hidden;
+}
+.adm-section-title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.35); padding: 14px 16px 0; font-weight: 600;
+}
+
+.adm-row {
+  display: flex; align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05); gap: 12px;
+}
+.adm-row:last-child { border-bottom: none; }
+.adm-row-label { flex: 1; font-size: 14px; color: rgba(255,255,255,0.8); }
+.adm-row-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+.adm-btn {
+  padding: 10px 16px; border-radius: 8px; border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  display: block; width: 100%; margin: 0;
+}
+.adm-btn-gold   { background: var(--gold); color: #000; }
+.adm-btn-ghost  { background: rgba(255,255,255,0.1); color: #fff; }
+.adm-btn-danger { background: rgba(200,40,40,0.2); color: #ff6b6b; border: 1px solid rgba(200,40,40,0.3); }
+
+/* Hotspot preview */
+.hs-preview-wrap {
+  margin: 12px 16px 16px;
+  position: relative; width: calc(100% - 32px);
+  aspect-ratio: 9/19.5;
+  background: #1a1a2e; border-radius: 10px;
+  overflow: hidden; touch-action: none;
+}
+.hs-preview-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center top;
+}
+.hs-zone {
+  position: absolute; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: move; touch-action: none; box-sizing: border-box;
+}
+.hs-zone .rz-handle {
+  position: absolute; bottom: 0; right: 0;
+  width: 16px; height: 16px;
+  cursor: se-resize; touch-action: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; opacity: 0.7;
+}
+.hs-zone-label {
+  font-size: 11px; font-weight: 700;
+  pointer-events: none;
+}
+
+/* Value zone style */
+.z-val {
+  border: 1.5px solid rgba(255,255,255,0.7);
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+}
+.z-enter {
+  border: 2px solid rgba(100,220,120,0.95);
+  background: rgba(0,0,0,0.35);
+  color: rgba(100,220,120,1);
+  font-weight: 700; font-size: 13px;
+}
+
+/* Pitch → Suit display */
+.pitch-dial { padding: 16px; text-align: center; }
+.pitch-num { font-size: 48px; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; line-height: 1; }
+.pitch-suit-big { font-size: 52px; line-height: 1; margin-top: 4px; transition: color 0.2s; }
+.pitch-suit-name { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+/* 4-section suit bar */
+.suit-bar {
+  display: flex; gap: 3px; margin: 12px 16px 8px;
+}
+.suit-section {
+  flex: 1; padding: 8px 2px; border-radius: 6px;
+  text-align: center; line-height: 1.4;
+  background: rgba(255,255,255,0.05);
+  transition: background 0.15s, transform 0.15s;
+  font-family: serif;
+}
+.suit-section .ss-sym  { font-size: 20px; }
+.suit-section .ss-range { font-size: 9px; color: rgba(255,255,255,0.3); }
+.suit-section:nth-child(1) .ss-sym { color: rgba(160,170,255,0.7); }
+.suit-section:nth-child(2) .ss-sym { color: rgba(255,90,90,0.7); }
+.suit-section:nth-child(3) .ss-sym { color: rgba(80,210,110,0.7); }
+.suit-section:nth-child(4) .ss-sym { color: rgba(255,200,60,0.7); }
+.suit-section.active {
+  background: rgba(255,255,255,0.14);
+  transform: scale(1.05);
+}
+.suit-section:nth-child(1).active .ss-sym { color: rgba(180,190,255,1); }
+.suit-section:nth-child(2).active .ss-sym { color: rgba(255,100,100,1); }
+.suit-section:nth-child(3).active .ss-sym { color: rgba(80,230,120,1); }
+.suit-section:nth-child(4).active .ss-sym { color: rgba(255,210,60,1); }
+
+.pitch-track {
+  height: 6px; background: rgba(255,255,255,0.08);
+  border-radius: 3px; margin: 0 16px 6px; overflow: hidden;
+}
+.pitch-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, #8888ff, #ff5555, #55cc77, #ffcc44);
+  transition: width 0.1s linear;
+}
+.pitch-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: rgba(255,255,255,0.2);
+  padding: 0 16px;
+}
+
+/* Permission overlay */
+#perm-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+  z-index: 100; display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; padding: 40px; text-align: center;
+}
+#perm-overlay.show { display: flex; }
+#perm-overlay h2 { font-size: 22px; color: #fff; }
+#perm-overlay p { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+#perm-btn {
+  margin-top: 8px; padding: 14px 32px; border-radius: 12px; border: none;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  background: var(--gold); color: #000;
+}
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,0.12); backdrop-filter: blur(12px);
+  color: #fff; padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; letter-spacing: 0.5px;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  z-index: 200; white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ═══ HOME VIEW ══════════════════════════════════ -->
+<div id="view-home" class="view active">
+  <div id="home-bg"></div>
+  <div id="home-no-bg">
+    <div class="icon">📱</div>
+    <div>Upload your home screen<br>screenshot in Admin</div>
+    <div style="font-size:11px;opacity:0.5;margin-top:4px">Tap top-right corner ×5 for Admin</div>
+  </div>
+  <div id="hotspot-layer">
+    <!-- value hotspots injected by JS -->
+  </div>
+  <div id="suit-flash"></div>
+  <div id="admin-trigger"></div>
+</div>
+
+<!-- ═══ WHATCARD VIEW ═════════════════════════════ -->
+<div id="view-whatcard" class="view">
+  <div id="wc-title">WhatCard</div>
+  <div id="deck-scene"></div>
+  <div id="shake-hint">Shake to reveal</div>
+  <div id="revealed-label"></div>
+</div>
+
+<!-- ═══ ADMIN VIEW ════════════════════════════════ -->
+<div id="view-admin" class="view">
+  <div class="adm-scroll">
+    <div class="adm-bar">
+      <h1>Admin</h1>
+      <button class="adm-close" onclick="closeAdmin()">✕</button>
+    </div>
+
+    <!-- Background -->
+    <div class="adm-section">
+      <div class="adm-section-title">Home Screen Background</div>
+      <div class="adm-row" style="flex-direction:column;align-items:stretch;gap:10px">
+        <div class="adm-row-label">
+          Upload a screenshot of your phone's home screen
+          <div class="adm-row-sub">Fills the background exactly</div>
+        </div>
+        <label style="cursor:pointer">
+          <div class="adm-btn adm-btn-ghost" style="text-align:center">📷 Choose Screenshot</div>
+          <input id="bg-file" type="file" accept="image/*" style="display:none" onchange="handleBgUpload(event)">
+        </label>
+        <button class="adm-btn adm-btn-danger" onclick="clearBg()">Remove Image</button>
+      </div>
+    </div>
+
+    <!-- Hotspot zones -->
+    <div class="adm-section">
+      <div class="adm-section-title">Value Hotspot Zones (A – K)</div>
+      <div class="adm-row" style="flex-direction:column;align-items:stretch;gap:0;padding-bottom:0">
+        <div style="font-size:12px;color:rgba(255,255,255,0.3);padding:0 0 10px">
+          Drag zones · Drag ◢ to resize · Suit is from tilt angle
+        </div>
+        <div class="hs-preview-wrap" id="hs-preview">
+          <div class="hs-preview-bg" id="hs-preview-bg"></div>
+          <!-- zones injected by JS -->
+        </div>
+      </div>
+      <div class="adm-row">
+        <button class="adm-btn adm-btn-gold" onclick="saveHotspots()">Save Layout</button>
+      </div>
+    </div>
+
+    <!-- Pitch → Suit calibration -->
+    <div class="adm-section">
+      <div class="adm-section-title">Pitch → Suit — Tilt Phone to Test</div>
+      <div class="pitch-dial">
+        <div class="pitch-num" id="adm-pitch-deg">0°</div>
+        <div class="pitch-suit-big" id="adm-pitch-sym">♠</div>
+        <div class="pitch-suit-name" id="adm-pitch-name">Spades</div>
+      </div>
+      <div class="suit-bar">
+        <div class="suit-section active" id="suit-sec-0">
+          <div class="ss-sym">♠</div>
+          <div class="ss-range">0–22°</div>
+        </div>
+        <div class="suit-section" id="suit-sec-1">
+          <div class="ss-sym">♥</div>
+          <div class="ss-range">23–44°</div>
+        </div>
+        <div class="suit-section" id="suit-sec-2">
+          <div class="ss-sym">♣</div>
+          <div class="ss-range">45–67°</div>
+        </div>
+        <div class="suit-section" id="suit-sec-3">
+          <div class="ss-sym">♦</div>
+          <div class="ss-range">68–90°</div>
+        </div>
+      </div>
+      <div class="pitch-track"><div class="pitch-fill" id="adm-pitch-bar" style="width:0%"></div></div>
+      <div class="pitch-labels"><span>Flat (0°)</span><span>Upright (90°)</span></div>
+      <div class="adm-row" style="margin-top:4px">
+        <button class="adm-btn adm-btn-ghost" onclick="reqPermission(true)">Enable Motion Sensors</button>
+      </div>
+    </div>
+
+    <!-- Test & reset -->
+    <div class="adm-section">
+      <div class="adm-section-title">Test & Reset</div>
+      <div class="adm-row">
+        <div>
+          <div class="adm-row-label">Test WhatCard Screen</div>
+          <div class="adm-row-sub">Preview with ♠ A</div>
+        </div>
+        <button class="adm-btn adm-btn-ghost" style="width:auto;padding:8px 14px" onclick="testReveal()">Test</button>
+      </div>
+      <div class="adm-row">
+        <button class="adm-btn adm-btn-danger" onclick="resetAll()">Reset All Settings</button>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="adm-section">
+      <div class="adm-section-title">How to Perform</div>
+      <div class="adm-row" style="flex-direction:column;align-items:flex-start;gap:8px;line-height:1.7">
+        <div style="font-size:13px;color:rgba(255,255,255,0.5)">
+          1. <b style="color:#fff">Tilt phone</b> to pitch angle for the suit<br>
+          2. <b style="color:#fff">Tap the value hotspot</b> (A–K) — flashes suit + vibrates to confirm<br>
+          3. <b style="color:#fff">Tap Enter hotspot</b> → WhatCard opens<br>
+          4. Hand phone to spectator<br>
+          5. Take phone back, <b style="color:#fff">shake</b> to reveal<br>
+          6. <b style="color:#fff">Triple back-tap</b> to reset &amp; return home
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px">
+          Suit pitch: 0–22°=♠ · 23–44°=♥ · 45–67°=♣ · 68–90°=♦<br>
+          Vibration confirms suit: 1 pulse=♠ · 2=♥ · 3=♣ · 4=♦
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Permission overlay -->
+<div id="perm-overlay">
+  <h2>Motion Access</h2>
+  <p>This app needs motion sensor access to read tilt angle for suit selection.</p>
+  <button id="perm-btn" onclick="reqPermission(false)">Allow Motion</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+const SUITS = {
+  spades:   { sym: '♠', name: 'Spades',   red: false, pulses: 1 },
+  hearts:   { sym: '♥', name: 'Hearts',   red: true,  pulses: 2 },
+  clubs:    { sym: '♣', name: 'Clubs',    red: false, pulses: 3 },
+  diamonds: { sym: '♦', name: 'Diamonds', red: true,  pulses: 4 },
+};
+
+const SUIT_ORDER = ['spades','hearts','clubs','diamonds'];
+
+// Pitch 0–90° split evenly into 4 suits
+function pitchToSuit(p) {
+  return SUIT_ORDER[Math.min(3, Math.floor(p / 90 * 4))];
+}
+
+// Default layout: A–7 top row, 8–K middle row, Enter bottom strip
+function buildDefaultHotspots() {
+  const hs = {};
+  const row1 = ['A','2','3','4','5','6','7'];
+  const row2 = ['8','9','10','J','Q','K'];
+  row1.forEach((v, i) => { hs[v] = { x: i*(100/7), y: 70, w: 100/7, h: 8 }; });
+  row2.forEach((v, i) => { hs[v] = { x: i*(100/6), y: 80, w: 100/6, h: 8 }; });
+  hs['enter'] = { x: 25, y: 90, w: 50, h: 8 };
+  return hs;
+}
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let cfg = loadCfg();
+let selectedSuit  = null;
+let selectedValue = null;
+let currentPitch  = 0;
+let sensorActive  = false;
+let isRevealed    = false;
+
+let adminTaps = 0, adminTimer = null;
+let backTapCount = 0, backTapTimer = null, lastZ = 0;
+let shakeLog = [], shakeBlock = false;
+let drag = null;
+
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+function loadCfg() {
+  try { const s = localStorage.getItem('wc_cfg'); if (s) return JSON.parse(s); } catch(e) {}
+  return { bg: null, hotspots: buildDefaultHotspots() };
+}
+function saveCfg() { localStorage.setItem('wc_cfg', JSON.stringify(cfg)); }
+function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+function init() {
+  // Inject hotspot divs for each value + enter
+  const layer = document.getElementById('hotspot-layer');
+  [...VALUES, 'enter'].forEach(val => {
+    const el = document.createElement('div');
+    el.className = 'hotspot';
+    el.id = 'hs-' + val;
+    layer.appendChild(el);
+  });
+
+  applyBg();
+  applyHotspots();
+  buildDeck();
+  bindHotspots();
+  bindAdminTrigger();
+
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    if (!localStorage.getItem('wc_perm')) {
+      document.getElementById('perm-overlay').classList.add('show');
+    } else {
+      startSensors();
+    }
+  } else {
+    startSensors();
+  }
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ═══════════════════════════════════════════════════
+// SENSORS
+// ═══════════════════════════════════════════════════
+async function reqPermission() {
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res === 'granted') {
+        localStorage.setItem('wc_perm', '1');
+        document.getElementById('perm-overlay').classList.remove('show');
+        startSensors();
+      }
+    } catch(e) { console.warn(e); }
+  } else {
+    document.getElementById('perm-overlay').classList.remove('show');
+    startSensors();
+  }
+}
+
+function startSensors() {
+  if (sensorActive) return;
+  sensorActive = true;
+  window.addEventListener('deviceorientation', onOrientation, true);
+  window.addEventListener('devicemotion', onMotion, true);
+}
+
+function onOrientation(e) {
+  const raw = e.beta ?? 0;
+  currentPitch = Math.max(0, Math.min(90, Math.abs(raw)));
+  if (isAdminActive()) refreshPitchDisplay();
+}
+
+function onMotion(e) {
+  const ag = e.accelerationIncludingGravity;
+  if (!ag) return;
+  const x = ag.x ?? 0, y = ag.y ?? 0, z = ag.z ?? 0;
+
+  const mag = Math.sqrt(x*x + y*y + z*z);
+  const now = Date.now();
+  if (mag > 18) {
+    shakeLog.push(now);
+    shakeLog = shakeLog.filter(t => now - t < 600);
+    if (shakeLog.length >= 3 && !shakeBlock) {
+      shakeBlock = true; shakeLog = [];
+      setTimeout(() => { shakeBlock = false; }, 1200);
+      onShake();
+    }
+  }
+
+  const dz = Math.abs(z - lastZ);
+  lastZ = z;
+  if (dz > 25 && Math.abs(x) < 6 && Math.abs(y) < 6) {
+    backTapCount++;
+    clearTimeout(backTapTimer);
+    backTapTimer = setTimeout(() => {
+      if (backTapCount >= 3) onBackTap();
+      backTapCount = 0;
+    }, 900);
+  }
+}
+
+function onShake()   { if (isWhatcardActive() && !isRevealed) revealCard(); }
+function onBackTap() { if (isWhatcardActive()) resetTrick(); }
+
+// ═══════════════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+}
+function isAdminActive()    { return document.getElementById('view-admin').classList.contains('active'); }
+function isWhatcardActive() { return document.getElementById('view-whatcard').classList.contains('active'); }
+
+// ═══════════════════════════════════════════════════
+// HOME SCREEN
+// ═══════════════════════════════════════════════════
+function applyBg() {
+  const bg = document.getElementById('home-bg');
+  const noBg = document.getElementById('home-no-bg');
+  if (cfg.bg) {
+    bg.style.backgroundImage = `url(${cfg.bg})`;
+    noBg.style.display = 'none';
+  } else {
+    bg.style.backgroundImage = '';
+    noBg.style.display = '';
+  }
+  setPreviewBg();
+}
+
+function setPreviewBg() {
+  const previewBg = document.getElementById('hs-preview-bg');
+  if (!previewBg) return;
+  if (cfg.bg) {
+    previewBg.style.backgroundImage    = `url(${cfg.bg})`;
+    previewBg.style.backgroundSize     = 'cover';
+    previewBg.style.backgroundPosition = 'center top';
+    previewBg.style.backgroundColor    = 'transparent';
+  } else {
+    previewBg.style.backgroundImage = 'none';
+    previewBg.style.backgroundColor = '#1a1a2e';
+  }
+}
+
+function applyHotspots() {
+  [...VALUES, 'enter'].forEach(val => {
+    const z = cfg.hotspots[val];
+    const el = document.getElementById('hs-' + val);
+    if (!el || !z) return;
+    el.style.left   = z.x + '%';
+    el.style.top    = z.y + '%';
+    el.style.width  = z.w + '%';
+    el.style.height = z.h + '%';
+  });
+}
+
+function handleBgUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { cfg.bg = ev.target.result; saveCfg(); applyBg(); showToast('Background saved'); };
+  reader.readAsDataURL(file);
+}
+function clearBg() { cfg.bg = null; saveCfg(); applyBg(); showToast('Background removed'); }
+
+// ═══════════════════════════════════════════════════
+// HOTSPOTS — tap value → read pitch for suit → open WhatCard
+// ═══════════════════════════════════════════════════
+function bindHotspots() {
+  VALUES.forEach(val => {
+    const el = document.getElementById('hs-' + val);
+    if (el) el.addEventListener('pointerup', () => tapValue(val));
+  });
+  document.getElementById('hs-enter').addEventListener('pointerup', enterWhatCard);
+}
+
+function tapValue(val) {
+  const suitKey = pitchToSuit(currentPitch);
+  const suit    = SUITS[suitKey];
+
+  selectedValue = val;
+  selectedSuit  = suitKey;
+
+  // Flash value + suit at bottom-left to confirm
+  const color = suit.red ? '#e74c3c' : '#fff';
+  const flash = document.getElementById('suit-flash');
+  flash.innerHTML = `<span class="sf-val" style="color:${color}">${val}</span><span class="sf-sym" style="color:${color}">${suit.sym}</span>`;
+  flash.classList.add('show');
+  setTimeout(() => flash.classList.remove('show'), 800);
+
+  // Haptic pulses confirm suit (1=♠ 2=♥ 3=♣ 4=♦)
+  vibratePulses(suit.pulses);
+  // WhatCard opens on Enter hotspot tap
+}
+
+function enterWhatCard() {
+  if (!selectedSuit || !selectedValue) {
+    navigator.vibrate?.([40, 40, 40]);
+    return;
+  }
+  isRevealed = false;
+  buildDeck();
+  document.getElementById('shake-hint').style.display = '';
+  document.getElementById('revealed-label').classList.remove('show');
+  showView('whatcard');
+}
+
+function vibratePulses(n) {
+  if (!navigator.vibrate) return;
+  const pat = [];
+  for (let i = 0; i < n; i++) { if (i) pat.push(110); pat.push(75); }
+  navigator.vibrate(pat);
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN TRIGGER (5 taps, top-right corner)
+// ═══════════════════════════════════════════════════
+function bindAdminTrigger() {
+  document.getElementById('admin-trigger').addEventListener('pointerup', () => {
+    adminTaps++;
+    clearTimeout(adminTimer);
+    adminTimer = setTimeout(() => { adminTaps = 0; }, 2000);
+    if (adminTaps >= 5) { adminTaps = 0; openAdmin(); }
+  });
+}
+
+function openAdmin() {
+  applyBg();
+  syncZonesToPreview();
+  refreshPitchDisplay();
+  showView('admin');
+  if (!sensorActive) startSensors();
+}
+
+function closeAdmin() {
+  applyHotspots();
+  showView('home');
+}
+
+// ═══════════════════════════════════════════════════
+// DECK BUILDER
+// ═══════════════════════════════════════════════════
+function buildDeck() {
+  const scene = document.getElementById('deck-scene');
+  scene.innerHTML = '';
+  const N = 7;
+  for (let i = 0; i < N; i++) {
+    const c = document.createElement('div');
+    c.className = 'c c-back';
+    c.style.cssText = `z-index:${i}; transform:translate(${i*0.8}px,${-i*2}px);`;
+    scene.appendChild(c);
+  }
+  const j = document.createElement('div');
+  j.className = 'c c-joker'; j.id = 'joker';
+  j.style.cssText = `z-index:${N+1}; transform:translate(0,${-N*2}px);`;
+  j.innerHTML = '<div class="joker-symbol">🃏</div><div class="joker-label">JOKER</div>';
+  scene.appendChild(j);
+}
+
+// ═══════════════════════════════════════════════════
+// REVEAL
+// ═══════════════════════════════════════════════════
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+async function revealCard() {
+  if (!selectedSuit || !selectedValue) return;
+  isRevealed = true;
+
+  const suit  = SUITS[selectedSuit];
+  const val   = selectedValue;
+  const scene = document.getElementById('deck-scene');
+  const joker = document.getElementById('joker');
+  const backs = scene.querySelectorAll('.c-back');
+
+  document.getElementById('shake-hint').style.display = 'none';
+
+  joker.style.transition = 'transform 0.45s cubic-bezier(0.4,0,1,1), opacity 0.45s';
+  joker.style.transform  = 'translateX(-280%) rotate(-25deg) translateY(-40px)';
+  joker.style.opacity    = '0';
+
+  await wait(250);
+
+  backs.forEach((card, i) => {
+    const angle = (i - backs.length / 2) * 9;
+    const tx = (i - backs.length / 2) * 4;
+    card.style.transition = `transform 0.35s ease ${i * 20}ms`;
+    card.style.transform  = `translate(${tx + i*0.8}px, ${-i*2}px) rotate(${angle}deg)`;
+  });
+
+  await wait(400);
+
+  const card = document.createElement('div');
+  card.className = 'c c-face';
+  card.style.cssText = 'z-index:30; transform:translateY(80px) rotateY(90deg); opacity:0; transition:none;';
+  const cls = suit.red ? 'suit-red' : 'suit-black';
+  card.innerHTML = `
+    <div class="cf-corner">
+      <div class="cf-val ${cls}">${val}</div>
+      <div class="cf-suit ${cls}">${suit.sym}</div>
+    </div>
+    <div class="cf-center ${cls}">${suit.sym}</div>
+    <div class="cf-corner flip">
+      <div class="cf-val ${cls}">${val}</div>
+      <div class="cf-suit ${cls}">${suit.sym}</div>
+    </div>`;
+  scene.appendChild(card);
+
+  await wait(30);
+
+  card.style.transition  = 'transform 0.75s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease, box-shadow 0.6s ease 0.5s';
+  card.style.transform   = 'translateY(-100px) rotateY(0deg)';
+  card.style.opacity     = '1';
+  card.style.boxShadow   = `0 24px 80px rgba(${suit.red ? '220,60,60' : '100,120,255'},0.5), 0 0 0 1px rgba(0,0,0,0.08)`;
+
+  navigator.vibrate?.([80, 40, 80, 40, 160]);
+
+  await wait(700);
+
+  const label = document.getElementById('revealed-label');
+  label.textContent = `${val} of ${suit.name}`;
+  label.classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════
+function resetTrick() {
+  selectedSuit = selectedValue = null;
+  isRevealed   = false;
+  buildDeck();
+  showView('home');
+  navigator.vibrate?.(150);
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN — ZONE EDITOR
+// ═══════════════════════════════════════════════════
+function syncZonesToPreview() {
+  const preview   = document.getElementById('hs-preview');
+  const previewBg = document.getElementById('hs-preview-bg');
+
+  setPreviewBg();
+
+  // Remove old zones (keep previewBg)
+  preview.querySelectorAll('.hs-zone').forEach(z => z.remove());
+
+  // Value zones (A–K)
+  VALUES.forEach(val => {
+    const z  = cfg.hotspots[val] || { x: 0, y: 0, w: 10, h: 5 };
+    const el = document.createElement('div');
+    el.className     = 'hs-zone z-val';
+    el.id            = 'hz-' + val;
+    el.dataset.id    = val;
+    el.style.cssText = `left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%`;
+    el.innerHTML     = `<div class="hs-zone-label">${val}</div><div class="rz-handle">◢</div>`;
+    preview.appendChild(el);
+  });
+
+  // Enter zone
+  const ez  = cfg.hotspots['enter'] || { x: 25, y: 90, w: 50, h: 8 };
+  const eel = document.createElement('div');
+  eel.className     = 'hs-zone z-enter';
+  eel.id            = 'hz-enter';
+  eel.dataset.id    = 'enter';
+  eel.style.cssText = `left:${ez.x}%;top:${ez.y}%;width:${ez.w}%;height:${ez.h}%`;
+  eel.innerHTML     = `<div class="hs-zone-label">▶ Enter</div><div class="rz-handle">◢</div>`;
+  preview.appendChild(eel);
+
+  initZoneDrag(preview);
+}
+
+function initZoneDrag(container) {
+  container.querySelectorAll('.hs-zone').forEach(zone => {
+    zone.addEventListener('pointerdown', zonePointerDown);
+    zone.querySelector('.rz-handle').addEventListener('pointerdown', handlePointerDown);
+  });
+}
+
+function zonePointerDown(e) {
+  if (e.target.classList.contains('rz-handle')) return;
+  e.preventDefault(); e.stopPropagation();
+  startDragOp(e, 'move', e.currentTarget);
+}
+function handlePointerDown(e) {
+  e.preventDefault(); e.stopPropagation();
+  startDragOp(e, 'resize', e.currentTarget.parentElement);
+}
+
+function startDragOp(e, type, zone) {
+  const rect = document.getElementById('hs-preview').getBoundingClientRect();
+  drag = {
+    type, zone,
+    startX: e.clientX, startY: e.clientY,
+    startL: parseFloat(zone.style.left),
+    startT: parseFloat(zone.style.top),
+    startW: parseFloat(zone.style.width),
+    startH: parseFloat(zone.style.height),
+    cw: rect.width, ch: rect.height
+  };
+  window.addEventListener('pointermove', onDragMove, { passive: false });
+  window.addEventListener('pointerup', onDragEnd);
+}
+
+function onDragMove(e) {
+  if (!drag) return; e.preventDefault();
+  const dx = (e.clientX - drag.startX) / drag.cw * 100;
+  const dy = (e.clientY - drag.startY) / drag.ch * 100;
+  if (drag.type === 'move') {
+    drag.zone.style.left = Math.max(0, Math.min(100 - drag.startW, drag.startL + dx)) + '%';
+    drag.zone.style.top  = Math.max(0, Math.min(100 - drag.startH, drag.startT + dy)) + '%';
+  } else {
+    drag.zone.style.width  = Math.max(5, Math.min(100 - drag.startL, drag.startW + dx)) + '%';
+    drag.zone.style.height = Math.max(4, Math.min(100 - drag.startT, drag.startH + dy)) + '%';
+  }
+}
+
+function onDragEnd() {
+  drag = null;
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragEnd);
+}
+
+function saveHotspots() {
+  [...VALUES, 'enter'].forEach(val => {
+    const el = document.getElementById('hz-' + val);
+    if (!el) return;
+    cfg.hotspots[val] = {
+      x: parseFloat(el.style.left),
+      y: parseFloat(el.style.top),
+      w: parseFloat(el.style.width),
+      h: parseFloat(el.style.height),
+    };
+  });
+  saveCfg();
+  applyHotspots();
+  showToast('Layout saved ✓');
+  navigator.vibrate?.(80);
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN — PITCH/SUIT DISPLAY
+// ═══════════════════════════════════════════════════
+function refreshPitchDisplay() {
+  const suitKey = pitchToSuit(currentPitch);
+  const suit    = SUITS[suitKey];
+  const idx     = SUIT_ORDER.indexOf(suitKey);
+
+  document.getElementById('adm-pitch-deg').textContent  = Math.round(currentPitch) + '°';
+  document.getElementById('adm-pitch-sym').textContent  = suit.sym;
+  document.getElementById('adm-pitch-sym').style.color  = suit.red ? '#e74c3c' : '#fff';
+  document.getElementById('adm-pitch-name').textContent = suit.name;
+  document.getElementById('adm-pitch-bar').style.width  = (currentPitch / 90 * 100) + '%';
+
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('suit-sec-' + i).classList.toggle('active', i === idx);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN — TEST & RESET
+// ═══════════════════════════════════════════════════
+function testReveal() {
+  selectedSuit = 'spades'; selectedValue = 'A'; isRevealed = false;
+  buildDeck();
+  document.getElementById('shake-hint').style.display = '';
+  document.getElementById('revealed-label').classList.remove('show');
+  showView('whatcard');
+}
+
+function resetAll() {
+  if (!confirm('Reset all settings?')) return;
+  localStorage.removeItem('wc_cfg');
+  localStorage.removeItem('wc_perm');
+  cfg = { bg: null, hotspots: buildDefaultHotspots() };
+  selectedSuit = selectedValue = null;
+  applyBg(); applyHotspots();
+  showToast('Reset complete');
+  closeAdmin();
+}
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+init();
+</script>
+</body>
+</html>
