@@ -1036,9 +1036,10 @@ function setupChatView() {
 function submitInput() {
   const input = document.getElementById('gpt-input-text');
   const text = input.value.trim();
+  if (!text) return;
   input.value = '';
   input.blur();
-  sendQuestion(text || 'What is the card I\'m thinking of?');
+  sendQuestion(text);
 }
 
 function sendQuestion(text) {
