@@ -614,7 +614,7 @@ html, body {
     <div class="adm-bar">
       <div>
         <h1>Admin</h1>
-        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v3.6</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v3.5.1</div>
       </div>
       <button class="adm-close" onclick="closeAdmin()">✕</button>
     </div>
@@ -1066,11 +1066,41 @@ function clearBg() { cfg.bg = null; saveCfg(); applyBg(); showToast('Background 
 // HOTSPOTS — tap value → read pitch for suit → open WhatCard
 // ═══════════════════════════════════════════════════
 function bindHotspots() {
-  VALUES.forEach(val => {
+  let pressing = false;
+  let lastHs   = null;
+
+  function fireHotspot(val) {
+    if (val === 'enter') enterWhatCard();
+    else tapValue(val);
+  }
+
+  function hsAtPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return (el && el.id.startsWith('hs-')) ? el.id.slice(3) : null;
+  }
+
+  [...VALUES, 'enter'].forEach(val => {
     const el = document.getElementById('hs-' + val);
-    if (el) el.addEventListener('pointerdown', () => tapValue(val));
+    if (!el) return;
+    el.addEventListener('pointerdown', () => {
+      pressing = true;
+      lastHs   = val;
+      fireHotspot(val);
+    });
   });
-  document.getElementById('hs-enter').addEventListener('pointerdown', enterWhatCard);
+
+  // Fire each new hotspot the finger slides into while held down
+  window.addEventListener('pointermove', e => {
+    if (!pressing) return;
+    const val = hsAtPoint(e.clientX, e.clientY);
+    if (!val || val === lastHs) return;
+    lastHs = val;
+    fireHotspot(val);
+  }, { passive: true });
+
+  // Lift-off does nothing
+  window.addEventListener('pointerup',     () => { pressing = false; lastHs = null; });
+  window.addEventListener('pointercancel', () => { pressing = false; lastHs = null; });
 }
 
 function tapValue(val) {
