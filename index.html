@@ -201,6 +201,11 @@ html, body {
   width: 36px; height: 36px; border-radius: 50%;
   background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+#gpt-send-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #fff; display: none; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer;
+}
 #gpt-disclaimer { text-align: center; font-size: 11px; color: rgba(255,255,255,0.18); margin-top: 8px; }
 
 /* Suggestion chip */
@@ -515,7 +520,8 @@ html, body {
         <div id="gpt-input-add">+</div>
         <input id="gpt-input-text" type="text" placeholder="Ask ChatGPT"
                autocomplete="off" autocorrect="off" autocapitalize="sentences"
-               onkeydown="if(event.key==='Enter')submitInput()">
+               onkeydown="if(event.key==='Enter')submitInput()"
+               oninput="toggleSendBtn(this.value)">
         <!-- Microphone icon -->
         <div id="gpt-mic-btn">
           <svg width="15" height="19" viewBox="0 0 15 22" fill="none">
@@ -524,14 +530,20 @@ html, body {
             <line x1="7.5" y1="17.5" x2="7.5" y2="21" stroke="rgba(255,255,255,0.5)" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
         </div>
-        <!-- Audio waveform / send button -->
-        <div id="gpt-record-btn" onclick="submitInput()">
+        <!-- Audio waveform (shown when input empty) -->
+        <div id="gpt-record-btn">
           <svg width="16" height="13" viewBox="0 0 22 18" fill="none">
             <rect x="0" y="6" width="3" height="6" rx="1.5" fill="#000"/>
             <rect x="4.75" y="3" width="3" height="12" rx="1.5" fill="#000"/>
             <rect x="9.5" y="0" width="3" height="18" rx="1.5" fill="#000"/>
             <rect x="14.25" y="3" width="3" height="12" rx="1.5" fill="#000"/>
             <rect x="19" y="6" width="3" height="6" rx="1.5" fill="#000"/>
+          </svg>
+        </div>
+        <!-- Send button (shown when input has text) -->
+        <div id="gpt-send-btn" onclick="submitInput()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 19V5M5 12l7-7 7 7" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
       </div>
@@ -546,7 +558,7 @@ html, body {
     <div class="adm-bar">
       <div>
         <h1>Admin</h1>
-        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v3</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v3.1</div>
       </div>
       <button class="adm-close" onclick="closeAdmin()">✕</button>
     </div>
@@ -1036,11 +1048,18 @@ function setupChatView() {
   resp.innerHTML = '';
 }
 
+function toggleSendBtn(val) {
+  const hasText = val.trim().length > 0;
+  document.getElementById('gpt-record-btn').style.display = hasText ? 'none' : 'flex';
+  document.getElementById('gpt-send-btn').style.display   = hasText ? 'flex' : 'none';
+}
+
 function submitInput() {
   const input = document.getElementById('gpt-input-text');
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
+  toggleSendBtn('');
   input.blur();
   sendQuestion(text);
 }
