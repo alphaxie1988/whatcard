@@ -1,6 +1,6 @@
 {
-  "name": "ChatGPT",
-  "short_name": "ChatGPT",
+  "name": "[ChatGPT]",
+  "short_name": "[ChatGPT]",
   "description": "Card prediction app",
   "start_url": "./",
   "scope": "./",
