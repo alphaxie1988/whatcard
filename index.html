@@ -353,6 +353,25 @@ html, body {
   background: var(--gold); color: #000;
 }
 
+/* Toggle switch */
+.toggle {
+  position: relative; width: 44px; height: 26px; flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider {
+  position: absolute; inset: 0; border-radius: 13px;
+  background: rgba(255,255,255,0.15); cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px;
+  transition: transform 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--gold); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
 /* Toast */
 #toast {
   position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
@@ -463,6 +482,21 @@ html, body {
       <div class="pitch-labels"><span>Flat (0°)</span><span>Upright (90°)</span></div>
       <div class="adm-row" style="margin-top:4px">
         <button class="adm-btn adm-btn-ghost" onclick="reqPermission(true)">Enable Motion Sensors</button>
+      </div>
+    </div>
+
+    <!-- Confirm feedback -->
+    <div class="adm-section">
+      <div class="adm-section-title">Confirm Feedback</div>
+      <div class="adm-row">
+        <div class="adm-row-label">
+          Show value &amp; suit flash
+          <div class="adm-row-sub">Briefly displays tapped card on screen</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-flash" onchange="setShowFlash(this.checked)">
+          <div class="toggle-slider"></div>
+        </label>
       </div>
     </div>
 
@@ -786,12 +820,13 @@ function tapValue(val) {
   selectedValue = val;
   selectedSuit  = suitKey;
 
-  // Flash value + suit at bottom-left to confirm
-  const color = suit.red ? '#e74c3c' : '#fff';
-  const flash = document.getElementById('suit-flash');
-  flash.innerHTML = `<span class="sf-val" style="color:${color}">${val}</span><span class="sf-sym" style="color:${color}">${suit.sym}</span>`;
-  flash.classList.add('show');
-  setTimeout(() => flash.classList.remove('show'), 800);
+  if (cfg.showFlash !== false) {
+    const color = suit.red ? '#e74c3c' : '#fff';
+    const flash = document.getElementById('suit-flash');
+    flash.innerHTML = `<span class="sf-val" style="color:${color}">${val}</span><span class="sf-sym" style="color:${color}">${suit.sym}</span>`;
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 800);
+  }
 
   // Haptic pulses confirm suit (1=♠ 2=♥ 3=♣ 4=♦)
   vibratePulses(suit.pulses);
@@ -836,8 +871,14 @@ function openAdmin() {
   applyBg();
   syncZonesToPreview();
   refreshPitchDisplay();
+  document.getElementById('toggle-flash').checked = cfg.showFlash !== false;
   showView('admin');
   if (!sensorActive) startSensors();
+}
+
+function setShowFlash(val) {
+  cfg.showFlash = val;
+  saveCfg();
 }
 
 function closeAdmin() {
