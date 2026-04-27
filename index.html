@@ -1068,9 +1068,9 @@ function clearBg() { cfg.bg = null; saveCfg(); applyBg(); showToast('Background 
 function bindHotspots() {
   VALUES.forEach(val => {
     const el = document.getElementById('hs-' + val);
-    if (el) el.addEventListener('pointerup', () => tapValue(val));
+    if (el) el.addEventListener('pointerdown', () => tapValue(val));
   });
-  document.getElementById('hs-enter').addEventListener('pointerup', enterWhatCard);
+  document.getElementById('hs-enter').addEventListener('pointerdown', enterWhatCard);
 }
 
 function tapValue(val) {
