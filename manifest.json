@@ -1,6 +1,6 @@
 {
-  "name": "WhatCard",
-  "short_name": "WhatCard",
+  "name": "ChatGPT",
+  "short_name": "ChatGPT",
   "description": "Card prediction app",
   "start_url": "./",
   "scope": "./",
@@ -10,9 +10,8 @@
   "theme_color": "#0a0a0a",
   "icons": [
     {
-      "src": "./favicon.svg",
+      "src": "./favicon.ico",
       "sizes": "any",
-      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]
