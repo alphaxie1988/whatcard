@@ -1092,6 +1092,10 @@ function closeAdmin() {
 // CHAT VIEW
 // ═══════════════════════════════════════════════════
 function setupChatView() {
+  // Remove any extra rows added by replyTokenLimit()
+  document.querySelectorAll('#gpt-messages .gpt-user-row:not(#gpt-user-row), #gpt-messages .gpt-ai-row:not(#gpt-ai-row)')
+    .forEach(el => el.remove());
+
   document.getElementById('gpt-suggestion-area').style.display = 'flex';
   document.getElementById('gpt-user-row').style.display = 'none';
   document.getElementById('gpt-ai-row').style.display = 'none';
