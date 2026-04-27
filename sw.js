@@ -1,4 +1,4 @@
-// v15
+// v16
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', e => {

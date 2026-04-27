@@ -234,6 +234,34 @@ html, body {
 }
 #gpt-disclaimer { text-align: center; font-size: 11px; color: rgba(255,255,255,0.18); margin-top: 8px; }
 
+/* Network connecting spinner */
+#gpt-connecting { display: none; padding: 6px 0; }
+.gpt-connect-ring {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: rgba(255,255,255,0.65);
+  animation: spinRing 0.75s linear infinite;
+}
+@keyframes spinRing { to { transform: rotate(360deg); } }
+
+/* Speed buttons */
+.speed-group { display: flex; gap: 6px; flex-shrink: 0; }
+.speed-btn {
+  padding: 6px 12px; border-radius: 8px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5);
+}
+.speed-btn.active { background: var(--gold); color: #000; }
+
+/* Custom message textarea */
+#custom-msg {
+  width: 100%; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+  color: #fff; font-size: 13px; padding: 10px 12px;
+  font-family: inherit; line-height: 1.5; resize: vertical;
+}
+#custom-msg::placeholder { color: rgba(255,255,255,0.25); }
+
 /* Suggestion chip */
 #gpt-suggestion-area {
   margin-top: auto; padding-bottom: 8px;
@@ -531,6 +559,7 @@ html, body {
           </svg>
         </div>
         <div id="gpt-ai-content">
+          <div id="gpt-connecting"><div class="gpt-connect-ring"></div></div>
           <div id="gpt-thinking">
             <span class="gpt-dot"></span>
             <span class="gpt-dot"></span>
@@ -585,7 +614,7 @@ html, body {
     <div class="adm-bar">
       <div>
         <h1>Admin</h1>
-        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v3.5</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v3.6</div>
       </div>
       <button class="adm-close" onclick="closeAdmin()">✕</button>
     </div>
@@ -671,6 +700,31 @@ html, body {
       </div>
     </div>
 
+    <!-- Chat Response -->
+    <div class="adm-section">
+      <div class="adm-section-title">Chat Response</div>
+      <div class="adm-row">
+        <div class="adm-row-label">
+          Typing Speed
+          <div class="adm-row-sub">How fast the AI text streams in</div>
+        </div>
+        <div class="speed-group">
+          <button id="speed-slow" class="speed-btn" onclick="setSpeed(50)">Slow</button>
+          <button id="speed-med"  class="speed-btn" onclick="setSpeed(26)">Med</button>
+          <button id="speed-fast" class="speed-btn" onclick="setSpeed(12)">Fast</button>
+        </div>
+      </div>
+      <div class="adm-row" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div class="adm-row-label">
+          Custom Message
+          <div class="adm-row-sub">Use {card} as the card placeholder. Leave empty for random variations.</div>
+        </div>
+        <textarea id="custom-msg" rows="3"
+          placeholder="e.g. I knew it! It's the {card}!"
+          oninput="cfg.customMessage=this.value.trim()||null;saveCfg()"></textarea>
+      </div>
+    </div>
+
     <!-- Test & reset -->
     <div class="adm-section">
       <div class="adm-section-title">Test & Reset</div>
@@ -726,6 +780,22 @@ html, body {
 // ═══════════════════════════════════════════════════
 const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 
+const RESPONSE_TEMPLATES = [
+  { intro: "Sure! Let me try...\n\nBased on the energy I'm picking up, I believe you're thinking of the ", outro: "\n\nHow did I do? 🎴" },
+  { intro: "Interesting... give me a moment.\n\nI'm sensing it's the ",                                   outro: "\n\nWas I right? 🃏" },
+  { intro: "Let me focus for a second...\n\nMy reading suggests it's the ",                               outro: "\n\nAm I correct? ✨" },
+  { intro: "Hmm, concentrating...\n\nI'm getting a strong signal — it's the ",                            outro: "\n\nHow close was I? 🎯" },
+];
+
+function getTemplate() {
+  const c = cfg.customMessage;
+  if (c) {
+    const i = c.indexOf('{card}');
+    return i >= 0 ? { intro: c.slice(0, i), outro: c.slice(i + 6) } : { intro: c + '\n\n', outro: '' };
+  }
+  return RESPONSE_TEMPLATES[Math.floor(Math.random() * RESPONSE_TEMPLATES.length)];
+}
+
 const SUITS = {
   spades:   { sym: '♠', name: 'Spades',   red: false, pulses: 1 },
   hearts:   { sym: '♥', name: 'Hearts',   red: true,  pulses: 2 },
@@ -766,6 +836,7 @@ let isRevealed    = false;
 
 let adminTaps = 0, adminTimer = null;
 let chatBackTaps = 0, chatBackTimer = null;
+let wakeLock = null;
 let backTapCount = 0, backTapTimer = null, lastZ = 0;
 let shakeLog = [], shakeBlock = false;
 let drag = null;
@@ -1031,6 +1102,7 @@ function enterWhatCard() {
   streamActive = false;
   setupChatView();
   saveActiveState();
+  acquireWakeLock();
   showView('whatcard');
   lockBackButton();
 }
@@ -1070,6 +1142,8 @@ function openAdmin() {
   syncZonesToPreview();
   refreshPitchDisplay();
   document.getElementById('toggle-flash').checked = cfg.showFlash !== false;
+  document.getElementById('custom-msg').value = cfg.customMessage || '';
+  updateSpeedBtns();
   showView('admin');
   if (!sensorActive) startSensors();
 }
@@ -1092,17 +1166,36 @@ function closeAdmin() {
 // CHAT VIEW
 // ═══════════════════════════════════════════════════
 function setupChatView() {
-  // Remove any extra rows added by replyTokenLimit()
   document.querySelectorAll('#gpt-messages .gpt-user-row:not(#gpt-user-row), #gpt-messages .gpt-ai-row:not(#gpt-ai-row)')
     .forEach(el => el.remove());
-
   document.getElementById('gpt-suggestion-area').style.display = 'flex';
   document.getElementById('gpt-user-row').style.display = 'none';
   document.getElementById('gpt-ai-row').style.display = 'none';
+  document.getElementById('gpt-connecting').style.display = 'none';
   document.getElementById('gpt-thinking').style.display = 'flex';
   const resp = document.getElementById('gpt-response');
   resp.style.display = 'none';
   resp.innerHTML = '';
+}
+
+// ── WAKE LOCK ────────────────────────────────────
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
+// ── TYPING SPEED ─────────────────────────────────
+function setSpeed(ms) {
+  cfg.typingSpeed = ms; saveCfg(); updateSpeedBtns();
+}
+function updateSpeedBtns() {
+  const s = cfg.typingSpeed || 26;
+  document.getElementById('speed-slow').classList.toggle('active', s >= 45);
+  document.getElementById('speed-med').classList.toggle('active',  s > 15 && s < 45);
+  document.getElementById('speed-fast').classList.toggle('active', s <= 15);
 }
 
 function toggleSendBtn(val) {
@@ -1125,18 +1218,25 @@ function sendQuestion(text) {
   if (streamActive) return;
   text = text || 'What is the card I\'m thinking of?';
 
-  if (isRevealed) {
-    replyTokenLimit(text);
-    return;
-  }
+  if (isRevealed) { replyTokenLimit(text); return; }
 
   document.getElementById('gpt-suggestion-area').style.display = 'none';
   document.querySelector('.gpt-user-bubble').textContent = text;
   document.getElementById('gpt-user-row').style.display = 'flex';
   document.getElementById('gpt-ai-row').style.display = 'flex';
+
+  // Network spinner phase
+  document.getElementById('gpt-connecting').style.display = 'block';
+  document.getElementById('gpt-thinking').style.display = 'none';
+
   const msgs = document.getElementById('gpt-messages');
   msgs.scrollTop = msgs.scrollHeight;
-  setTimeout(streamResponse, 1200);
+
+  setTimeout(() => {
+    document.getElementById('gpt-connecting').style.display = 'none';
+    document.getElementById('gpt-thinking').style.display = 'flex';
+    setTimeout(streamResponse, 700);
+  }, 700);
 }
 
 function escHtml(s) {
@@ -1212,24 +1312,23 @@ async function streamResponse() {
   cursor.textContent = '▌';
   respEl.appendChild(cursor);
 
-  async function type(text, delay = 26) {
+  const tpl   = getTemplate();
+  const delay = cfg.typingSpeed || 26;
+
+  async function type(text, d = delay) {
     for (const ch of text) {
-      if (ch === '\n') {
-        cursor.before(document.createElement('br'));
-      } else {
+      if (ch === '\n') { cursor.before(document.createElement('br')); }
+      else {
         const prev = cursor.previousSibling;
-        if (prev && prev.nodeType === Node.TEXT_NODE) {
-          prev.data += ch;
-        } else {
-          cursor.before(document.createTextNode(ch));
-        }
+        if (prev && prev.nodeType === Node.TEXT_NODE) prev.data += ch;
+        else cursor.before(document.createTextNode(ch));
       }
-      await wait(delay);
+      await wait(d);
     }
   }
 
   navigator.vibrate?.([30]);
-  await type("Sure! Let me try...\n\nBased on the energy I'm picking up, I believe you're thinking of the ");
+  await type(tpl.intro);
 
   const strong = document.createElement('strong');
   strong.style.color = suit.red ? '#ff7c7c' : '#ffffff';
@@ -1238,7 +1337,7 @@ async function streamResponse() {
   navigator.vibrate?.([80, 40, 80, 40, 160]);
   await wait(350);
 
-  await type('\n\nHow did I do? 🎴', 30);
+  if (tpl.outro) await type(tpl.outro, Math.max(delay, 28));
 
   cursor.remove();
   streamActive = false;
@@ -1268,6 +1367,7 @@ function resetTrick() {
   selectedSuit = selectedValue = null;
   isRevealed   = false;
   streamActive = false;
+  releaseWakeLock();
   showView('home');
   navigator.vibrate?.(150);
 }
