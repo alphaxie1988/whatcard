@@ -562,7 +562,7 @@ let drag = null;
 const ACTIVE_KEY = 'wc_active';
 
 function saveActiveState() {
-  localStorage.setItem(ACTIVE_KEY, JSON.stringify({ suit: selectedSuit, value: selectedValue }));
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify({ suit: selectedSuit, value: selectedValue, revealed: isRevealed }));
 }
 function clearActiveState() {
   localStorage.removeItem(ACTIVE_KEY);
@@ -608,17 +608,22 @@ function init() {
   bindHotspots();
   bindAdminTrigger();
 
-  // Restore WhatCard if app was closed while on joker screen
+  // Restore WhatCard if app was closed mid-trick or post-reveal
   const saved = loadActiveState();
   if (saved && saved.suit && saved.value) {
     selectedSuit  = saved.suit;
     selectedValue = saved.value;
-    isRevealed    = false;
-    buildDeck();
-    document.getElementById('shake-hint').style.display = '';
-    document.getElementById('revealed-label').classList.remove('show');
-    showView('whatcard');
-    lockBackButton();
+    if (saved.revealed) {
+      isRevealed = true;
+      restoreRevealed();
+    } else {
+      isRevealed = false;
+      buildDeck();
+      document.getElementById('shake-hint').style.display = '';
+      document.getElementById('revealed-label').classList.remove('show');
+      showView('whatcard');
+      lockBackButton();
+    }
   }
 
   if (typeof DeviceOrientationEvent !== 'undefined' &&
@@ -833,6 +838,9 @@ function openAdmin() {
 }
 
 function closeAdmin() {
+  clearActiveState();
+  selectedSuit = selectedValue = null;
+  isRevealed   = false;
   applyHotspots();
   showView('home');
 }
@@ -865,6 +873,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 async function revealCard() {
   if (!selectedSuit || !selectedValue) return;
   isRevealed = true;
+  saveActiveState();
 
   const suit  = SUITS[selectedSuit];
   const val   = selectedValue;
@@ -916,6 +925,41 @@ async function revealCard() {
 
   await wait(700);
 
+  const label = document.getElementById('revealed-label');
+  label.textContent = `${val} of ${suit.name}`;
+  label.classList.add('show');
+}
+
+function restoreRevealed() {
+  buildDeck();
+  showView('whatcard');
+  lockBackButton();
+
+  const suit  = SUITS[selectedSuit];
+  const val   = selectedValue;
+  const scene = document.getElementById('deck-scene');
+
+  const joker = document.getElementById('joker');
+  joker.style.opacity   = '0';
+  joker.style.transform = 'translateX(-280%) rotate(-25deg) translateY(-40px)';
+
+  scene.querySelectorAll('.c-back').forEach((card, i) => {
+    const angle = (i - 3.5) * 9;
+    const tx    = (i - 3.5) * 4;
+    card.style.transform = `translate(${tx + i*0.8}px,${-i*2}px) rotate(${angle}deg)`;
+  });
+
+  const card = document.createElement('div');
+  card.className = 'c c-face';
+  const cls = suit.red ? 'suit-red' : 'suit-black';
+  card.style.cssText = `z-index:30;transform:translateY(-100px) rotateY(0deg);opacity:1;box-shadow:0 24px 80px rgba(${suit.red?'220,60,60':'100,120,255'},0.5),0 0 0 1px rgba(0,0,0,0.08);`;
+  card.innerHTML = `
+    <div class="cf-corner"><div class="cf-val ${cls}">${val}</div><div class="cf-suit ${cls}">${suit.sym}</div></div>
+    <div class="cf-center ${cls}">${suit.sym}</div>
+    <div class="cf-corner flip"><div class="cf-val ${cls}">${val}</div><div class="cf-suit ${cls}">${suit.sym}</div></div>`;
+  scene.appendChild(card);
+
+  document.getElementById('shake-hint').style.display = 'none';
   const label = document.getElementById('revealed-label');
   label.textContent = `${val} of ${suit.name}`;
   label.classList.add('show');
