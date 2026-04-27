@@ -93,6 +93,12 @@ html, body {
   width: 70px; height: 70px;
   z-index: 999;
 }
+#chat-back-trigger {
+  position: absolute;
+  top: 0; left: 0;
+  width: 70px; height: 70px;
+  z-index: 999;
+}
 
 /* Suit flash feedback */
 #suit-flash {
@@ -448,6 +454,7 @@ html, body {
 
 <!-- ═══ WHATCARD VIEW — Fake ChatGPT Mobile App ════ -->
 <div id="view-whatcard" class="view">
+  <div id="chat-back-trigger"></div>
 
   <!-- Top Navigation Bar -->
   <div id="gpt-nav">
@@ -758,6 +765,7 @@ let sensorActive  = false;
 let isRevealed    = false;
 
 let adminTaps = 0, adminTimer = null;
+let chatBackTaps = 0, chatBackTimer = null;
 let backTapCount = 0, backTapTimer = null, lastZ = 0;
 let shakeLog = [], shakeBlock = false;
 let drag = null;
@@ -811,6 +819,7 @@ function init() {
   applyHotspots();
   bindHotspots();
   bindAdminTrigger();
+  bindChatBackTrigger();
 
   // Restore WhatCard if app was closed mid-trick or post-reveal
   const saved = loadActiveState();
@@ -1036,6 +1045,16 @@ function vibratePulses(n) {
 // ═══════════════════════════════════════════════════
 // ADMIN TRIGGER (5 taps, top-right corner)
 // ═══════════════════════════════════════════════════
+function bindChatBackTrigger() {
+  document.getElementById('chat-back-trigger').addEventListener('pointerup', () => {
+    if (!isWhatcardActive()) return;
+    chatBackTaps++;
+    clearTimeout(chatBackTimer);
+    chatBackTimer = setTimeout(() => { chatBackTaps = 0; }, 2000);
+    if (chatBackTaps >= 5) { chatBackTaps = 0; resetTrick(); }
+  });
+}
+
 function bindAdminTrigger() {
   document.getElementById('admin-trigger').addEventListener('pointerup', () => {
     if (isAdminActive()) return; // Don't re-trigger from within admin
