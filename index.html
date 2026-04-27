@@ -198,6 +198,22 @@ html, body {
 }
 #gpt-disclaimer { text-align: center; font-size: 11px; color: rgba(255,255,255,0.18); margin-top: 8px; }
 
+/* Suggestion chip */
+#gpt-suggestion-area {
+  margin-top: auto; padding-bottom: 8px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+#gpt-suggestion-chip {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 16px; padding: 13px 18px;
+  font-size: 15px; color: rgba(255,255,255,0.75);
+  cursor: pointer; text-align: left; width: 100%;
+  display: block; line-height: 1.45;
+  -webkit-tap-highlight-color: rgba(255,255,255,0.06);
+}
+#gpt-suggestion-chip:active { background: rgba(255,255,255,0.06); }
+
 /* ── ADMIN VIEW ─────────────────────────────── */
 #view-admin {
   background: #0d0d1a; color: #fff;
@@ -455,10 +471,18 @@ html, body {
   <div id="gpt-ui">
     <!-- Messages -->
     <div id="gpt-messages">
-      <div class="gpt-user-row">
+      <!-- Suggestion chip — shown before question is sent -->
+      <div id="gpt-suggestion-area">
+        <div id="gpt-suggestion-chip" onclick="sendQuestion()">
+          What is the card I'm thinking of?
+        </div>
+      </div>
+
+      <!-- Conversation — hidden until question is sent -->
+      <div class="gpt-user-row" id="gpt-user-row" style="display:none">
         <div class="gpt-user-bubble">What is the card I'm thinking of?</div>
       </div>
-      <div class="gpt-ai-row">
+      <div class="gpt-ai-row" id="gpt-ai-row" style="display:none">
         <div class="gpt-ai-avatar">
           <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
             <g transform="translate(50,50)" stroke="#000" stroke-width="10">
@@ -482,7 +506,7 @@ html, body {
 
     <!-- Input footer -->
     <div id="gpt-footer">
-      <div id="gpt-input-row" onclick="streamResponse()">
+      <div id="gpt-input-row" onclick="sendQuestion()">
         <div id="gpt-input-add">+</div>
         <span id="gpt-input-text">Ask ChatGPT</span>
         <!-- Microphone icon -->
@@ -993,10 +1017,23 @@ function closeAdmin() {
 // CHAT VIEW
 // ═══════════════════════════════════════════════════
 function setupChatView() {
+  document.getElementById('gpt-suggestion-area').style.display = 'flex';
+  document.getElementById('gpt-user-row').style.display = 'none';
+  document.getElementById('gpt-ai-row').style.display = 'none';
   document.getElementById('gpt-thinking').style.display = 'flex';
   const resp = document.getElementById('gpt-response');
   resp.style.display = 'none';
   resp.innerHTML = '';
+}
+
+function sendQuestion() {
+  if (streamActive || isRevealed) return;
+  document.getElementById('gpt-suggestion-area').style.display = 'none';
+  document.getElementById('gpt-user-row').style.display = 'flex';
+  document.getElementById('gpt-ai-row').style.display = 'flex';
+  const msgs = document.getElementById('gpt-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(streamResponse, 1200);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1056,14 +1093,16 @@ async function streamResponse() {
 }
 
 function restoreRevealed() {
-  setupChatView();
+  document.getElementById('gpt-suggestion-area').style.display = 'none';
+  document.getElementById('gpt-user-row').style.display = 'flex';
+  document.getElementById('gpt-ai-row').style.display = 'flex';
+  document.getElementById('gpt-thinking').style.display = 'none';
   showView('whatcard');
   lockBackButton();
 
   const suit = SUITS[selectedSuit];
   const val  = selectedValue;
 
-  document.getElementById('gpt-thinking').style.display = 'none';
   const respEl = document.getElementById('gpt-response');
   respEl.style.display = 'block';
   respEl.innerHTML = `Sure! Let me try...<br><br>Based on the energy I'm picking up, I believe you're thinking of the <strong style="color:${suit.red ? '#ff7c7c' : '#ffffff'}">${val} of ${suit.name} ${suit.sym}</strong><br><br>How did I do? 🎴`;
