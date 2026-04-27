@@ -37,6 +37,25 @@ html, body {
 .view { position: fixed; inset: 0; display: none; flex-direction: column; }
 .view.active { display: flex; }
 
+/* ── ANDROID-STYLE ENTER ANIMATION ─────────── */
+@keyframes androidEnter {
+  0%   { opacity: 0; transform: scale(0.93) translateY(18px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0); }
+}
+@keyframes androidOverlay {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+.wc-enter {
+  animation: androidEnter 380ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+#wc-ripple {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #000;
+  pointer-events: none;
+  animation: androidOverlay 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* ── HOME VIEW ──────────────────────────────── */
 #view-home { background: #111; }
 
@@ -892,8 +911,22 @@ function onBackTap() { if (isWhatcardActive()) resetTrick(); }
 // VIEWS
 // ═══════════════════════════════════════════════════
 function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + id).classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active', 'wc-enter'));
+  const view = document.getElementById('view-' + id);
+  view.classList.add('active');
+
+  if (id === 'whatcard') {
+    // Black flash overlay (like Android launching an app)
+    const ripple = document.createElement('div');
+    ripple.id = 'wc-ripple';
+    document.body.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+
+    // Force reflow so animation restarts cleanly, then apply
+    void view.offsetWidth;
+    view.classList.add('wc-enter');
+    view.addEventListener('animationend', () => view.classList.remove('wc-enter'), { once: true });
+  }
 }
 function isAdminActive()    { return document.getElementById('view-admin').classList.contains('active'); }
 function isWhatcardActive() { return document.getElementById('view-whatcard').classList.contains('active'); }
