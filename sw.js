@@ -1,4 +1,4 @@
-const CACHE = 'whatcard-v2';
+const CACHE = 'whatcard-v3';
 const CORE = ['./', './index.html', './manifest.json', './favicon.svg'];
 
 self.addEventListener('install', e => {
