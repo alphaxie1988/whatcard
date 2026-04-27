@@ -94,109 +94,99 @@ html, body {
 }
 #suit-flash.show { opacity: 1; transition: opacity 0s; }
 
-/* ── WHATCARD VIEW ──────────────────────────── */
-#view-whatcard {
-  background: var(--dark-bg);
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+/* ── CHATGPT INCOGNITO VIEW ──────────────────────── */
+#view-whatcard { background: #212121; flex-direction: column; }
+
+/* Simulated incognito browser chrome */
+#inc-chrome { background: #35363a; flex-shrink: 0; padding-top: max(env(safe-area-inset-top,0px), 10px); }
+#inc-topbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px 8px; }
+#inc-urlbar {
+  flex: 1; display: flex; align-items: center;
+  background: rgba(255,255,255,0.1); border-radius: 20px;
+  padding: 6px 12px; gap: 6px; min-width: 0; overflow: hidden;
+}
+#inc-url-text { font-size: 14px; color: rgba(255,255,255,0.85); white-space: nowrap; }
+#inc-tab-badge {
+  width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.55);
+  border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65); flex-shrink: 0;
+}
+.inc-menu { color: rgba(255,255,255,0.55); font-size: 20px; flex-shrink: 0; line-height: 1; }
+
+/* ChatGPT shell */
+#gpt-ui { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#gpt-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px 8px; flex-shrink: 0;
+}
+#gpt-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; color: #fff; }
+#gpt-model-badge {
+  font-size: 12px; color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.08); border-radius: 5px;
+  padding: 2px 7px; font-weight: 500;
+}
+#gpt-share-btn {
+  background: rgba(255,255,255,0.08); border: none; border-radius: 50%;
+  width: 32px; height: 32px; color: rgba(255,255,255,0.6);
+  font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 
-#view-whatcard::before {
-  content: '';
-  position: absolute; inset: 0;
-  background-image:
-    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 35% 15%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 65% 85%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(2px 2px at 75% 40%, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1px 1px at 25% 55%, rgba(255,255,255,0.3), transparent);
+/* Messages */
+#gpt-messages {
+  flex: 1; overflow-y: auto; padding: 16px 16px 8px;
+  display: flex; flex-direction: column; gap: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.gpt-user-row { display: flex; justify-content: flex-end; }
+.gpt-user-bubble {
+  background: #2f2f2f; border-radius: 18px 18px 4px 18px;
+  padding: 10px 16px; max-width: 85%;
+  font-size: 15px; color: #ececec; line-height: 1.5;
+}
+.gpt-ai-row { display: flex; gap: 10px; align-items: flex-start; }
+.gpt-ai-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+#gpt-ai-content { flex: 1; font-size: 15px; color: #ececec; line-height: 1.75; padding-top: 2px; }
+
+/* Thinking dots */
+#gpt-thinking { display: flex; gap: 5px; align-items: center; padding: 6px 0; }
+.gpt-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.gpt-dot:nth-child(2) { animation-delay: 0.2s; }
+.gpt-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%,80%,100% { opacity: 0.3; transform: scale(0.7); }
+  40% { opacity: 1; transform: scale(1); }
 }
 
-#wc-title {
-  position: absolute; top: 60px;
-  font-size: 11px; letter-spacing: 5px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.15); font-weight: 300;
-}
+/* Streaming cursor */
+.gpt-cursor { display: inline; color: rgba(255,255,255,0.8); animation: blink 0.7s step-end infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
 
-#deck-scene {
-  position: relative;
-  width: 160px; height: 224px;
-  perspective: 800px;
-  margin-bottom: 60px;
+/* Input footer */
+#gpt-footer {
+  padding: 10px 16px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+  flex-shrink: 0;
 }
-
-.c {
-  position: absolute;
-  width: 160px; height: 224px;
-  border-radius: 12px;
-  backface-visibility: hidden;
-  will-change: transform;
+#gpt-input-row {
+  display: flex; align-items: center; gap: 8px;
+  background: #2f2f2f; border-radius: 26px;
+  padding: 10px 10px 10px 18px;
 }
-
-.c-back {
-  background: var(--card-blue);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+#gpt-input-text { flex: 1; font-size: 15px; color: rgba(255,255,255,0.28); }
+.gpt-icon-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.07); display: flex; align-items: center;
+  justify-content: center; font-size: 15px; color: rgba(255,255,255,0.4); flex-shrink: 0;
 }
-.c-back::before {
-  content: ''; position: absolute; inset: 0; border-radius: 12px;
-  background-image:
-    repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px),
-    repeating-linear-gradient(-45deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px);
-}
-.c-back::after {
-  content: ''; position: absolute; inset: 8px;
-  border-radius: 7px; border: 1.5px solid rgba(255,255,255,0.12);
-}
-
-.c-joker {
-  background: #fff;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 4px;
-}
-.c-joker .joker-symbol { font-size: 80px; line-height: 1; }
-.c-joker .joker-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #555; font-family: serif; }
-.c-joker::before { content: 'JOKER'; position: absolute; top: 10px; left: 12px; font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #888; font-family: serif; }
-.c-joker::after  { content: 'JOKER'; position: absolute; bottom: 10px; right: 12px; font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #888; font-family: serif; transform: rotate(180deg); }
-
-.c-face {
-  background: #fff;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.08);
-  display: flex; flex-direction: column; padding: 10px;
-}
-.cf-corner { display: flex; flex-direction: column; align-items: center; line-height: 1.1; align-self: flex-start; }
-.cf-corner.flip { align-self: flex-end; transform: rotate(180deg); margin-top: auto; }
-.cf-val { font-size: 24px; font-weight: 800; font-family: Georgia, serif; }
-.cf-suit { font-size: 16px; }
-.cf-center { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 88px; line-height: 1; }
-.suit-red { color: var(--red); }
-.suit-black { color: var(--black-text); }
-
-#shake-hint {
-  position: absolute; bottom: 80px;
-  font-size: 12px; letter-spacing: 3px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.3);
-  animation: breathe 2.5s ease-in-out infinite;
-}
-@keyframes breathe {
-  0%,100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.03); }
-}
-
-#revealed-label {
-  position: absolute; bottom: 44px;
-  font-size: 11px; letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--gold); opacity: 0; transition: opacity 0.6s;
-}
-#revealed-label.show { opacity: 1; }
+#gpt-disclaimer { text-align: center; font-size: 11px; color: rgba(255,255,255,0.18); margin-top: 8px; }
 
 /* ── ADMIN VIEW ─────────────────────────────── */
 #view-admin {
@@ -400,12 +390,85 @@ html, body {
   <div id="suit-flash"></div>
 </div>
 
-<!-- ═══ WHATCARD VIEW ═════════════════════════════ -->
+<!-- ═══ WHATCARD VIEW — Fake ChatGPT incognito ════ -->
 <div id="view-whatcard" class="view">
-  <div id="wc-title">WhatCard</div>
-  <div id="deck-scene"></div>
-  <div id="shake-hint">Shake to reveal</div>
-  <div id="revealed-label"></div>
+
+  <!-- Simulated Chrome incognito bar -->
+  <div id="inc-chrome">
+    <div id="inc-topbar">
+      <!-- Incognito person-with-hat icon -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.65)">
+        <path d="M3 10a1 1 0 011-1h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1z"/>
+        <path d="M7 10V6a1 1 0 011-1h8a1 1 0 011 1v4z"/>
+        <circle cx="12" cy="16" r="4"/>
+      </svg>
+      <div id="inc-urlbar">
+        <svg width="11" height="12" viewBox="0 0 24 24" fill="rgba(255,255,255,0.45)">
+          <path d="M12 1a5 5 0 015 5v3h1a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V11a2 2 0 012-2h1V6a5 5 0 015-5zm0 2a3 3 0 00-3 3v3h6V6a3 3 0 00-3-3z"/>
+        </svg>
+        <span id="inc-url-text">chatgpt.com</span>
+      </div>
+      <div id="inc-tab-badge">1</div>
+      <div class="inc-menu">⋮</div>
+    </div>
+  </div>
+
+  <!-- ChatGPT UI -->
+  <div id="gpt-ui">
+    <!-- Header -->
+    <div id="gpt-header">
+      <div id="gpt-title">
+        <!-- Simplified OpenAI logo (3 overlapping ellipses) -->
+        <svg width="22" height="22" viewBox="0 0 100 100" fill="none">
+          <g transform="translate(50,50)" stroke="white" stroke-width="9">
+            <ellipse rx="18" ry="30"/>
+            <ellipse rx="18" ry="30" transform="rotate(60)"/>
+            <ellipse rx="18" ry="30" transform="rotate(120)"/>
+          </g>
+          <circle cx="50" cy="50" r="7" fill="white"/>
+        </svg>
+        ChatGPT <span id="gpt-model-badge">4o ▾</span>
+      </div>
+      <button id="gpt-share-btn">↑</button>
+    </div>
+
+    <!-- Messages -->
+    <div id="gpt-messages">
+      <div class="gpt-user-row">
+        <div class="gpt-user-bubble">What is the card I'm thinking of?</div>
+      </div>
+      <div class="gpt-ai-row">
+        <div class="gpt-ai-avatar">
+          <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+            <g transform="translate(50,50)" stroke="#212121" stroke-width="10">
+              <ellipse rx="18" ry="30"/>
+              <ellipse rx="18" ry="30" transform="rotate(60)"/>
+              <ellipse rx="18" ry="30" transform="rotate(120)"/>
+            </g>
+            <circle cx="50" cy="50" r="7" fill="#212121"/>
+          </svg>
+        </div>
+        <div id="gpt-ai-content">
+          <div id="gpt-thinking">
+            <span class="gpt-dot"></span>
+            <span class="gpt-dot"></span>
+            <span class="gpt-dot"></span>
+          </div>
+          <div id="gpt-response"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input footer -->
+    <div id="gpt-footer">
+      <div id="gpt-input-row">
+        <span id="gpt-input-text">Message ChatGPT</span>
+        <div class="gpt-icon-btn">🎙</div>
+        <div class="gpt-icon-btn">⊕</div>
+      </div>
+      <div id="gpt-disclaimer">ChatGPT can make mistakes. Check important info.</div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ ADMIN VIEW ════════════════════════════════ -->
@@ -594,6 +657,7 @@ let adminTaps = 0, adminTimer = null;
 let backTapCount = 0, backTapTimer = null, lastZ = 0;
 let shakeLog = [], shakeBlock = false;
 let drag = null;
+let streamActive = false;
 
 // ── WhatCard active-state persistence ──────────────
 const ACTIVE_KEY = 'wc_active';
@@ -641,7 +705,6 @@ function init() {
 
   applyBg();
   applyHotspots();
-  buildDeck();
   bindHotspots();
   bindAdminTrigger();
 
@@ -655,9 +718,8 @@ function init() {
       restoreRevealed();
     } else {
       isRevealed = false;
-      buildDeck();
-      document.getElementById('shake-hint').style.display = '';
-      document.getElementById('revealed-label').classList.remove('show');
+      streamActive = false;
+      setupChatView();
       showView('whatcard');
       lockBackButton();
     }
@@ -738,7 +800,7 @@ function onMotion(e) {
   }
 }
 
-function onShake()   { if (isWhatcardActive() && !isRevealed) revealCard(); }
+function onShake()   { if (isWhatcardActive() && !isRevealed) streamResponse(); }
 function onBackTap() { if (isWhatcardActive()) resetTrick(); }
 
 // ═══════════════════════════════════════════════════
@@ -838,10 +900,9 @@ function enterWhatCard() {
     navigator.vibrate?.([40, 40, 40]);
     return;
   }
-  isRevealed = false;
-  buildDeck();
-  document.getElementById('shake-hint').style.display = '';
-  document.getElementById('revealed-label').classList.remove('show');
+  isRevealed   = false;
+  streamActive = false;
+  setupChatView();
   saveActiveState();
   showView('whatcard');
   lockBackButton();
@@ -885,128 +946,89 @@ function closeAdmin() {
   clearActiveState();
   selectedSuit = selectedValue = null;
   isRevealed   = false;
+  streamActive = false;
   applyHotspots();
   showView('home');
 }
 
 // ═══════════════════════════════════════════════════
-// DECK BUILDER
+// CHAT VIEW
 // ═══════════════════════════════════════════════════
-function buildDeck() {
-  const scene = document.getElementById('deck-scene');
-  scene.innerHTML = '';
-  const N = 7;
-  for (let i = 0; i < N; i++) {
-    const c = document.createElement('div');
-    c.className = 'c c-back';
-    c.style.cssText = `z-index:${i}; transform:translate(${i*0.8}px,${-i*2}px);`;
-    scene.appendChild(c);
-  }
-  const j = document.createElement('div');
-  j.className = 'c c-joker'; j.id = 'joker';
-  j.style.cssText = `z-index:${N+1}; transform:translate(0,${-N*2}px);`;
-  j.innerHTML = '<div class="joker-symbol">🃏</div><div class="joker-label">JOKER</div>';
-  scene.appendChild(j);
+function setupChatView() {
+  document.getElementById('gpt-thinking').style.display = 'flex';
+  const resp = document.getElementById('gpt-response');
+  resp.style.display = 'none';
+  resp.innerHTML = '';
 }
 
 // ═══════════════════════════════════════════════════
-// REVEAL
+// STREAM RESPONSE
 // ═══════════════════════════════════════════════════
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-async function revealCard() {
-  if (!selectedSuit || !selectedValue) return;
-  isRevealed = true;
+async function streamResponse() {
+  if (!selectedSuit || !selectedValue || streamActive) return;
+  isRevealed   = true;
+  streamActive = true;
   saveActiveState();
 
-  const suit  = SUITS[selectedSuit];
-  const val   = selectedValue;
-  const scene = document.getElementById('deck-scene');
-  const joker = document.getElementById('joker');
-  const backs = scene.querySelectorAll('.c-back');
+  const suit = SUITS[selectedSuit];
+  const val  = selectedValue;
 
-  document.getElementById('shake-hint').style.display = 'none';
+  document.getElementById('gpt-thinking').style.display = 'none';
+  const respEl = document.getElementById('gpt-response');
+  respEl.style.display = 'block';
+  respEl.innerHTML = '';
 
-  joker.style.transition = 'transform 0.45s cubic-bezier(0.4,0,1,1), opacity 0.45s';
-  joker.style.transform  = 'translateX(-280%) rotate(-25deg) translateY(-40px)';
-  joker.style.opacity    = '0';
+  const cursor = document.createElement('span');
+  cursor.className = 'gpt-cursor';
+  cursor.textContent = '▌';
+  respEl.appendChild(cursor);
 
-  await wait(250);
+  async function type(text, delay = 26) {
+    for (const ch of text) {
+      if (ch === '\n') {
+        cursor.before(document.createElement('br'));
+      } else {
+        const prev = cursor.previousSibling;
+        if (prev && prev.nodeType === Node.TEXT_NODE) {
+          prev.data += ch;
+        } else {
+          cursor.before(document.createTextNode(ch));
+        }
+      }
+      await wait(delay);
+    }
+  }
 
-  backs.forEach((card, i) => {
-    const angle = (i - backs.length / 2) * 9;
-    const tx = (i - backs.length / 2) * 4;
-    card.style.transition = `transform 0.35s ease ${i * 20}ms`;
-    card.style.transform  = `translate(${tx + i*0.8}px, ${-i*2}px) rotate(${angle}deg)`;
-  });
+  navigator.vibrate?.([30]);
+  await type("Sure! Let me try...\n\nBased on the energy I'm picking up, I believe you're thinking of the ");
 
-  await wait(400);
-
-  const card = document.createElement('div');
-  card.className = 'c c-face';
-  card.style.cssText = 'z-index:30; transform:translateY(80px) rotateY(90deg); opacity:0; transition:none;';
-  const cls = suit.red ? 'suit-red' : 'suit-black';
-  card.innerHTML = `
-    <div class="cf-corner">
-      <div class="cf-val ${cls}">${val}</div>
-      <div class="cf-suit ${cls}">${suit.sym}</div>
-    </div>
-    <div class="cf-center ${cls}">${suit.sym}</div>
-    <div class="cf-corner flip">
-      <div class="cf-val ${cls}">${val}</div>
-      <div class="cf-suit ${cls}">${suit.sym}</div>
-    </div>`;
-  scene.appendChild(card);
-
-  await wait(30);
-
-  card.style.transition  = 'transform 0.75s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease, box-shadow 0.6s ease 0.5s';
-  card.style.transform   = 'translateY(-100px) rotateY(0deg)';
-  card.style.opacity     = '1';
-  card.style.boxShadow   = `0 24px 80px rgba(${suit.red ? '220,60,60' : '100,120,255'},0.5), 0 0 0 1px rgba(0,0,0,0.08)`;
-
+  const strong = document.createElement('strong');
+  strong.style.color = suit.red ? '#ff7c7c' : '#ffffff';
+  strong.textContent = `${val} of ${suit.name} ${suit.sym}`;
+  cursor.before(strong);
   navigator.vibrate?.([80, 40, 80, 40, 160]);
+  await wait(350);
 
-  await wait(700);
+  await type('\n\nHow did I do? 🎴', 30);
 
-  const label = document.getElementById('revealed-label');
-  label.textContent = `${val} of ${suit.name}`;
-  label.classList.add('show');
+  cursor.remove();
+  streamActive = false;
 }
 
 function restoreRevealed() {
-  buildDeck();
+  setupChatView();
   showView('whatcard');
   lockBackButton();
 
-  const suit  = SUITS[selectedSuit];
-  const val   = selectedValue;
-  const scene = document.getElementById('deck-scene');
+  const suit = SUITS[selectedSuit];
+  const val  = selectedValue;
 
-  const joker = document.getElementById('joker');
-  joker.style.opacity   = '0';
-  joker.style.transform = 'translateX(-280%) rotate(-25deg) translateY(-40px)';
-
-  scene.querySelectorAll('.c-back').forEach((card, i) => {
-    const angle = (i - 3.5) * 9;
-    const tx    = (i - 3.5) * 4;
-    card.style.transform = `translate(${tx + i*0.8}px,${-i*2}px) rotate(${angle}deg)`;
-  });
-
-  const card = document.createElement('div');
-  card.className = 'c c-face';
-  const cls = suit.red ? 'suit-red' : 'suit-black';
-  card.style.cssText = `z-index:30;transform:translateY(-100px) rotateY(0deg);opacity:1;box-shadow:0 24px 80px rgba(${suit.red?'220,60,60':'100,120,255'},0.5),0 0 0 1px rgba(0,0,0,0.08);`;
-  card.innerHTML = `
-    <div class="cf-corner"><div class="cf-val ${cls}">${val}</div><div class="cf-suit ${cls}">${suit.sym}</div></div>
-    <div class="cf-center ${cls}">${suit.sym}</div>
-    <div class="cf-corner flip"><div class="cf-val ${cls}">${val}</div><div class="cf-suit ${cls}">${suit.sym}</div></div>`;
-  scene.appendChild(card);
-
-  document.getElementById('shake-hint').style.display = 'none';
-  const label = document.getElementById('revealed-label');
-  label.textContent = `${val} of ${suit.name}`;
-  label.classList.add('show');
+  document.getElementById('gpt-thinking').style.display = 'none';
+  const respEl = document.getElementById('gpt-response');
+  respEl.style.display = 'block';
+  respEl.innerHTML = `Sure! Let me try...<br><br>Based on the energy I'm picking up, I believe you're thinking of the <strong style="color:${suit.red ? '#ff7c7c' : '#ffffff'}">${val} of ${suit.name} ${suit.sym}</strong><br><br>How did I do? 🎴`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1016,7 +1038,7 @@ function resetTrick() {
   clearActiveState();
   selectedSuit = selectedValue = null;
   isRevealed   = false;
-  buildDeck();
+  streamActive = false;
   showView('home');
   navigator.vibrate?.(150);
 }
@@ -1149,10 +1171,9 @@ function refreshPitchDisplay() {
 // ADMIN — TEST & RESET
 // ═══════════════════════════════════════════════════
 function testReveal() {
-  selectedSuit = 'spades'; selectedValue = 'A'; isRevealed = false;
-  buildDeck();
-  document.getElementById('shake-hint').style.display = '';
-  document.getElementById('revealed-label').classList.remove('show');
+  selectedSuit = 'spades'; selectedValue = 'A';
+  isRevealed = false; streamActive = false;
+  setupChatView();
   showView('whatcard');
 }
 
