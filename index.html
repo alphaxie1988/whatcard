@@ -262,6 +262,15 @@ html, body {
 }
 #custom-msg::placeholder { color: rgba(255,255,255,0.25); }
 
+/* Spectator name input */
+.adm-text-input {
+  width: 100%; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+  color: #fff; font-size: 13px; padding: 10px 12px;
+  font-family: inherit;
+}
+.adm-text-input::placeholder { color: rgba(255,255,255,0.25); }
+
 /* Suggestion chip */
 #gpt-suggestion-area {
   margin-top: auto; padding-bottom: 8px;
@@ -403,13 +412,23 @@ html, body {
 .suit-section:nth-child(4).active .ss-sym { color: rgba(255,210,60,1); }
 
 .pitch-track {
-  height: 6px; background: rgba(255,255,255,0.08);
-  border-radius: 3px; margin: 0 16px 6px; overflow: hidden;
+  height: 20px; background: rgba(255,255,255,0.08);
+  border-radius: 10px; margin: 0 16px 6px;
+  position: relative; overflow: visible;
 }
 .pitch-fill {
-  height: 100%; border-radius: 3px;
+  height: 100%; border-radius: 10px;
   background: linear-gradient(90deg, #8888ff, #ff5555, #55cc77, #ffcc44);
   transition: width 0.1s linear;
+}
+.bound-handle {
+  position: absolute; top: -5px;
+  width: 5px; height: 30px;
+  background: #fff; border-radius: 3px;
+  cursor: ew-resize; touch-action: none;
+  transform: translateX(-50%);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.7);
+  z-index: 2;
 }
 .pitch-labels {
   display: flex; justify-content: space-between;
@@ -638,6 +657,14 @@ html, body {
     <!-- Hotspot zones -->
     <div class="adm-section">
       <div class="adm-section-title">Value Hotspot Zones (A – K)</div>
+      <div class="adm-row" style="padding:10px 16px;gap:10px">
+        <span style="font-size:12px;color:rgba(255,255,255,0.4);flex-shrink:0">Slot</span>
+        <div style="display:flex;gap:6px;flex:1">
+          <button id="layout-btn-0" class="adm-btn adm-btn-gold" style="flex:1;padding:7px 0" onclick="switchLayout(0)">A</button>
+          <button id="layout-btn-1" class="adm-btn adm-btn-ghost" style="flex:1;padding:7px 0" onclick="switchLayout(1)">B</button>
+          <button id="layout-btn-2" class="adm-btn adm-btn-ghost" style="flex:1;padding:7px 0" onclick="switchLayout(2)">C</button>
+        </div>
+      </div>
       <div class="adm-row" style="flex-direction:column;align-items:stretch;gap:0;padding-bottom:0">
         <div style="font-size:12px;color:rgba(255,255,255,0.3);padding:0 0 10px">
           Drag zones · Drag ◢ to resize · Suit is from tilt angle
@@ -678,7 +705,7 @@ html, body {
           <div class="ss-range">68–90°</div>
         </div>
       </div>
-      <div class="pitch-track"><div class="pitch-fill" id="adm-pitch-bar" style="width:0%"></div></div>
+      <div class="pitch-track" id="pitch-track-interactive"><div class="pitch-fill" id="adm-pitch-bar" style="width:0%"></div></div>
       <div class="pitch-labels"><span>Flat (0°)</span><span>Upright (90°)</span></div>
       <div class="adm-row" style="margin-top:4px">
         <button class="adm-btn adm-btn-ghost" onclick="reqPermission(true)">Enable Motion Sensors</button>
@@ -703,6 +730,15 @@ html, body {
     <!-- Chat Response -->
     <div class="adm-section">
       <div class="adm-section-title">Chat Response</div>
+      <div class="adm-row" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div class="adm-row-label">
+          Spectator Name
+          <div class="adm-row-sub">Optional — adds their name to the reveal</div>
+        </div>
+        <input id="spectator-name" type="text" class="adm-text-input"
+          placeholder="e.g. Sarah (leave empty for generic)"
+          oninput="cfg.spectatorName=this.value.trim();saveCfg()">
+      </div>
       <div class="adm-row">
         <div class="adm-row-label">
           Typing Speed
@@ -788,12 +824,17 @@ const RESPONSE_TEMPLATES = [
 ];
 
 function getTemplate() {
+  const name = (cfg.spectatorName || '').trim();
+  const prefix = name ? `${name}, ` : '';
   const c = cfg.customMessage;
   if (c) {
-    const i = c.indexOf('{card}');
-    return i >= 0 ? { intro: c.slice(0, i), outro: c.slice(i + 6) } : { intro: c + '\n\n', outro: '' };
+    let msg = c.replace('{name}', name || '');
+    const i = msg.indexOf('{card}');
+    if (i >= 0) return { intro: msg.slice(0, i), outro: msg.slice(i + 6) };
+    return { intro: msg + '\n\n', outro: '' };
   }
-  return RESPONSE_TEMPLATES[Math.floor(Math.random() * RESPONSE_TEMPLATES.length)];
+  const tpl = RESPONSE_TEMPLATES[Math.floor(Math.random() * RESPONSE_TEMPLATES.length)];
+  return { intro: prefix + tpl.intro, outro: tpl.outro };
 }
 
 const SUITS = {
@@ -805,11 +846,12 @@ const SUITS = {
 
 const SUIT_ORDER = ['spades','hearts','clubs','diamonds'];
 
-// Pitch: negative=♠  0–33=♥  34–67=♣  68–90=♦
+// Pitch: negative=♠  then split 0–90 by cfg.pitchBounds
 function pitchToSuit(p) {
+  const [b1, b2] = cfg.pitchBounds || [33, 67];
   if (p < 0)   return 'spades';
-  if (p <= 33) return 'hearts';
-  if (p <= 67) return 'clubs';
+  if (p <= b1) return 'hearts';
+  if (p <= b2) return 'clubs';
   return 'diamonds';
 }
 
@@ -846,7 +888,8 @@ let streamActive = false;
 const ACTIVE_KEY = 'wc_active';
 
 function saveActiveState() {
-  localStorage.setItem(ACTIVE_KEY, JSON.stringify({ suit: selectedSuit, value: selectedValue, revealed: isRevealed }));
+  const revealedHtml = isRevealed ? (document.getElementById('gpt-response')?.innerHTML || null) : null;
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify({ suit: selectedSuit, value: selectedValue, revealed: isRevealed, revealedHtml }));
 }
 function clearActiveState() {
   localStorage.removeItem(ACTIVE_KEY);
@@ -867,8 +910,30 @@ window.addEventListener('popstate', () => {
 // CONFIG
 // ═══════════════════════════════════════════════════
 function loadCfg() {
-  try { const s = localStorage.getItem('wc_cfg'); if (s) return JSON.parse(s); } catch(e) {}
-  return { bg: null, hotspots: buildDefaultHotspots() };
+  try {
+    const s = localStorage.getItem('wc_cfg');
+    if (s) {
+      const c = JSON.parse(s);
+      if (!c.layouts) {
+        c.layouts = [c.hotspots || buildDefaultHotspots(), buildDefaultHotspots(), buildDefaultHotspots()];
+        c.activeLayout = 0;
+      }
+      if (c.activeLayout === undefined) c.activeLayout = 0;
+      if (!Array.isArray(c.pitchBounds) || c.pitchBounds.length !== 2) c.pitchBounds = [33, 67];
+      if (c.spectatorName === undefined) c.spectatorName = '';
+      c.hotspots = c.layouts[c.activeLayout];
+      return c;
+    }
+  } catch(e) {}
+  const defHs = buildDefaultHotspots();
+  return {
+    bg: null,
+    layouts: [defHs, buildDefaultHotspots(), buildDefaultHotspots()],
+    activeLayout: 0,
+    hotspots: defHs,
+    pitchBounds: [33, 67],
+    spectatorName: '',
+  };
 }
 function saveCfg() { localStorage.setItem('wc_cfg', JSON.stringify(cfg)); }
 function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
@@ -899,7 +964,7 @@ function init() {
     selectedValue = saved.value;
     if (saved.revealed) {
       isRevealed = true;
-      restoreRevealed();
+      restoreRevealed(saved.revealedHtml);
     } else {
       isRevealed = false;
       streamActive = false;
@@ -1173,7 +1238,10 @@ function openAdmin() {
   refreshPitchDisplay();
   document.getElementById('toggle-flash').checked = cfg.showFlash !== false;
   document.getElementById('custom-msg').value = cfg.customMessage || '';
+  document.getElementById('spectator-name').value = cfg.spectatorName || '';
   updateSpeedBtns();
+  updateLayoutBtns();
+  initBoundHandles();
   showView('admin');
   if (!sensorActive) startSensors();
 }
@@ -1371,9 +1439,11 @@ async function streamResponse() {
 
   cursor.remove();
   streamActive = false;
+  cfg.spectatorName = '';
+  saveCfg();
 }
 
-function restoreRevealed() {
+function restoreRevealed(savedHtml) {
   document.getElementById('gpt-suggestion-area').style.display = 'none';
   document.getElementById('gpt-user-row').style.display = 'flex';
   document.getElementById('gpt-ai-row').style.display = 'flex';
@@ -1386,7 +1456,15 @@ function restoreRevealed() {
 
   const respEl = document.getElementById('gpt-response');
   respEl.style.display = 'block';
-  respEl.innerHTML = `Sure! Let me try...<br><br>Based on the energy I'm picking up, I believe you're thinking of the <strong style="color:${suit.red ? '#ff7c7c' : '#ffffff'}">${val} of ${suit.name} ${suit.sym}</strong><br><br>How did I do? 🎴`;
+  if (savedHtml) {
+    respEl.innerHTML = savedHtml;
+  } else {
+    const name = (cfg.spectatorName || '').trim();
+    const prefix = name ? `${name}, ` : '';
+    respEl.innerHTML = `${prefix}Sure! Let me try...<br><br>Based on the energy I'm picking up, I believe you're thinking of the <strong style="color:${suit.red ? '#ff7c7c' : '#ffffff'}">${val} of ${suit.name} ${suit.sym}</strong><br><br>How did I do? 🎴`;
+  }
+  cfg.spectatorName = '';
+  saveCfg();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1501,9 +1579,10 @@ function saveHotspots() {
       h: parseFloat(el.style.height),
     };
   });
+  cfg.layouts[cfg.activeLayout] = cfg.hotspots;
   saveCfg();
   applyHotspots();
-  showToast('Layout saved ✓');
+  showToast(`Layout ${'ABC'[cfg.activeLayout]} saved ✓`);
   navigator.vibrate?.(80);
 }
 
@@ -1524,6 +1603,7 @@ function refreshPitchDisplay() {
   for (let i = 0; i < 4; i++) {
     document.getElementById('suit-sec-' + i).classList.toggle('active', i === idx);
   }
+  refreshSuitRangeLabels();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1540,7 +1620,15 @@ function resetAll() {
   if (!confirm('Reset all settings?')) return;
   localStorage.removeItem('wc_cfg');
   localStorage.removeItem('wc_perm');
-  cfg = { bg: null, hotspots: buildDefaultHotspots() };
+  const defHs = buildDefaultHotspots();
+  cfg = {
+    bg: null,
+    layouts: [defHs, buildDefaultHotspots(), buildDefaultHotspots()],
+    activeLayout: 0,
+    hotspots: defHs,
+    pitchBounds: [33, 67],
+    spectatorName: '',
+  };
   selectedSuit = selectedValue = null;
   applyBg(); applyHotspots();
   showToast('Reset complete');
@@ -1556,6 +1644,99 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════
+// LAYOUT SLOTS
+// ═══════════════════════════════════════════════════
+function switchLayout(idx) {
+  if (idx === cfg.activeLayout) return;
+  saveCurrentPreviewToSlot(cfg.activeLayout);
+  cfg.activeLayout = idx;
+  cfg.hotspots = cfg.layouts[idx];
+  saveCfg();
+  syncZonesToPreview();
+  updateLayoutBtns();
+  showToast(`Layout ${'ABC'[idx]} loaded`);
+}
+
+function saveCurrentPreviewToSlot(idx) {
+  const layout = {};
+  [...VALUES, 'enter'].forEach(val => {
+    const el = document.getElementById('hz-' + val);
+    if (!el) return;
+    layout[val] = {
+      x: parseFloat(el.style.left),
+      y: parseFloat(el.style.top),
+      w: parseFloat(el.style.width),
+      h: parseFloat(el.style.height),
+    };
+  });
+  if (Object.keys(layout).length > 0) cfg.layouts[idx] = layout;
+}
+
+function updateLayoutBtns() {
+  [0, 1, 2].forEach(i => {
+    const btn = document.getElementById('layout-btn-' + i);
+    if (!btn) return;
+    btn.className = 'adm-btn ' + (i === cfg.activeLayout ? 'adm-btn-gold' : 'adm-btn-ghost');
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// PITCH BOUNDARY HANDLES
+// ═══════════════════════════════════════════════════
+let boundDrag = null;
+
+function initBoundHandles() {
+  const track = document.getElementById('pitch-track-interactive');
+  if (!track) return;
+  track.querySelectorAll('.bound-handle').forEach(h => h.remove());
+  refreshSuitRangeLabels();
+
+  cfg.pitchBounds.forEach((b, idx) => {
+    const h = document.createElement('div');
+    h.className = 'bound-handle';
+    h.style.left = (b / 90 * 100) + '%';
+    h.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      boundDrag = { idx, rect: track.getBoundingClientRect(), handle: h };
+      window.addEventListener('pointermove', onBoundMove, { passive: false });
+      window.addEventListener('pointerup', onBoundEnd);
+    });
+    track.appendChild(h);
+  });
+}
+
+function onBoundMove(e) {
+  if (!boundDrag) return;
+  e.preventDefault();
+  const { idx, rect, handle } = boundDrag;
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const deg = Math.round(pct * 90);
+  if (idx === 0) {
+    cfg.pitchBounds[0] = Math.min(deg, cfg.pitchBounds[1] - 8);
+  } else {
+    cfg.pitchBounds[1] = Math.max(deg, cfg.pitchBounds[0] + 8);
+  }
+  handle.style.left = (cfg.pitchBounds[idx] / 90 * 100) + '%';
+  refreshSuitRangeLabels();
+}
+
+function onBoundEnd() {
+  boundDrag = null;
+  window.removeEventListener('pointermove', onBoundMove);
+  window.removeEventListener('pointerup', onBoundEnd);
+  saveCfg();
+}
+
+function refreshSuitRangeLabels() {
+  const [b1, b2] = cfg.pitchBounds || [33, 67];
+  const labels = ['<0°', `0–${b1}°`, `${b1+1}–${b2}°`, `${b2+1}–90°`];
+  labels.forEach((txt, i) => {
+    const el = document.querySelector(`#suit-sec-${i} .ss-range`);
+    if (el) el.textContent = txt;
+  });
 }
 
 init();
