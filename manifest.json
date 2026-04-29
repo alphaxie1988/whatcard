@@ -1,6 +1,6 @@
 {
-  "name": "WhatCard",
-  "short_name": "WhatCard",
+  "name": "ChatGPT",
+  "short_name": "ChatGPT",
   "description": "Card prediction app",
   "start_url": "./",
   "scope": "./",
