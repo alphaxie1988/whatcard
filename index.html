@@ -169,13 +169,8 @@ html, body {
   padding: 10px 16px; max-width: 85%;
   font-size: 15px; color: #ececec; line-height: 1.5;
 }
-.gpt-ai-row { display: flex; gap: 10px; align-items: flex-start; }
-.gpt-ai-avatar {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: #fff; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; margin-top: 2px;
-}
-#gpt-ai-content { flex: 1; font-size: 15px; color: #ececec; line-height: 1.75; padding-top: 2px; }
+.gpt-ai-row { display: flex; align-items: flex-start; }
+#gpt-ai-content { flex: 1; font-size: 15px; color: #ececec; line-height: 1.75; }
 
 /* Thinking dots */
 #gpt-thinking { display: flex; gap: 5px; align-items: center; padding: 6px 0; }
@@ -567,16 +562,6 @@ html, body {
         <div class="gpt-user-bubble">What is the card I'm thinking of?</div>
       </div>
       <div class="gpt-ai-row" id="gpt-ai-row" style="display:none">
-        <div class="gpt-ai-avatar">
-          <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
-            <g transform="translate(50,50)" stroke="#000" stroke-width="10">
-              <ellipse rx="18" ry="30"/>
-              <ellipse rx="18" ry="30" transform="rotate(60)"/>
-              <ellipse rx="18" ry="30" transform="rotate(120)"/>
-            </g>
-            <circle cx="50" cy="50" r="7" fill="#000"/>
-          </svg>
-        </div>
         <div id="gpt-ai-content">
           <div id="gpt-connecting"><div class="gpt-connect-ring"></div></div>
           <div id="gpt-thinking">
@@ -593,7 +578,7 @@ html, body {
     <div id="gpt-footer">
       <div id="gpt-input-row">
         <div id="gpt-input-add">+</div>
-        <input id="gpt-input-text" type="text" placeholder="Ask ChatGPT"
+        <input id="gpt-input-text" type="text" placeholder="Reply to ChatGPT"
                autocomplete="off" autocorrect="off" autocapitalize="sentences"
                onkeydown="if(event.key==='Enter')submitInput()"
                oninput="toggleSendBtn(this.value)">
@@ -1366,17 +1351,7 @@ async function replyTokenLimit(userText) {
   const aiRow = document.createElement('div');
   aiRow.className = 'gpt-ai-row';
   aiRow.innerHTML = `
-    <div class="gpt-ai-avatar">
-      <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
-        <g transform="translate(50,50)" stroke="#000" stroke-width="10">
-          <ellipse rx="18" ry="30"/>
-          <ellipse rx="18" ry="30" transform="rotate(60)"/>
-          <ellipse rx="18" ry="30" transform="rotate(120)"/>
-        </g>
-        <circle cx="50" cy="50" r="7" fill="#000"/>
-      </svg>
-    </div>
-    <div class="gpt-ai-extra">
+    <div class="gpt-ai-extra" style="flex:1;font-size:15px;color:#ececec;line-height:1.75">
       <div class="gpt-thinking" style="display:flex;gap:5px;align-items:center;padding:6px 0">
         <span class="gpt-dot"></span><span class="gpt-dot"></span><span class="gpt-dot"></span>
       </div>
@@ -1474,17 +1449,7 @@ async function recoverTrick() {
   const aiRow = document.createElement('div');
   aiRow.className = 'gpt-ai-row';
   aiRow.innerHTML = `
-    <div class="gpt-ai-avatar">
-      <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
-        <g transform="translate(50,50)" stroke="#000" stroke-width="10">
-          <ellipse rx="18" ry="30"/>
-          <ellipse rx="18" ry="30" transform="rotate(60)"/>
-          <ellipse rx="18" ry="30" transform="rotate(120)"/>
-        </g>
-        <circle cx="50" cy="50" r="7" fill="#000"/>
-      </svg>
-    </div>
-    <div style="flex:1;font-size:15px;color:#ececec;line-height:1.75;padding-top:2px">
+    <div style="flex:1;font-size:15px;color:#ececec;line-height:1.75">
       <div class="gpt-thinking" style="display:flex;gap:5px;align-items:center;padding:6px 0">
         <span class="gpt-dot"></span><span class="gpt-dot"></span><span class="gpt-dot"></span>
       </div>
