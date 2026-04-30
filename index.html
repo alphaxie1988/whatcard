@@ -1411,6 +1411,7 @@ async function streamResponse() {
 
   navigator.vibrate?.([30]);
   await type(tpl.intro);
+  await wait(1000);
 
   const strong = document.createElement('strong');
   strong.style.color = suit.red ? '#ff7c7c' : '#ffffff';
@@ -1483,6 +1484,7 @@ async function recoverTrick() {
   }
 
   await type(tpl.intro);
+  await wait(1000);
 
   const strong = document.createElement('strong');
   strong.style.color = newSuit.red ? '#ff7c7c' : '#ffffff';
