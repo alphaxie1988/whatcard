@@ -548,6 +548,91 @@ html, body {
 .toggle input:checked + .toggle-slider { background: var(--gold); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
 
+/* Temporary chat disclaimer */
+#gpt-temp-disclaimer {
+  display: none; flex: 1;
+  align-items: center; justify-content: center;
+  padding: 40px 36px; text-align: center;
+  font-size: 14px; color: rgba(255,255,255,0.3); line-height: 1.65;
+}
+#gpt-temp-btn.temp-active { background: rgba(255,255,255,0.18); }
+
+/* ── SIDEBAR ─────────────────────────────────── */
+@keyframes slideInLeft  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes slideOutLeft { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+
+#view-sidebar {
+  position: fixed; inset: 0; z-index: 90;
+  display: none; flex-direction: row;
+}
+#view-sidebar.open  { display: flex; }
+#view-sidebar.close { display: flex; }
+
+#sidebar-panel {
+  width: 88%; max-width: 360px;
+  background: #000; display: flex; flex-direction: column;
+  padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+#view-sidebar.open  #sidebar-panel { animation: slideInLeft  300ms cubic-bezier(0.2,0,0,1) both; }
+#view-sidebar.close #sidebar-panel { animation: slideOutLeft 260ms cubic-bezier(0.4,0,1,1) both; }
+
+#sidebar-backdrop {
+  flex: 1; background: rgba(0,0,0,0.45);
+}
+#view-sidebar.open  #sidebar-backdrop { animation: fadeIn  300ms ease both; }
+#view-sidebar.close #sidebar-backdrop { animation: fadeOut 260ms ease both; }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+#sidebar-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: max(env(safe-area-inset-top,0px), 18px) 20px 20px;
+  flex-shrink: 0;
+}
+#sidebar-title { font-size: 22px; font-weight: 700; color: #fff; }
+#sidebar-top-right { display: flex; align-items: center; gap: 8px; }
+#sidebar-search {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #1c1c1e; border: none; color: #fff;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+#sidebar-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #12a37c; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+
+.sidebar-menu-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 20px; cursor: pointer;
+  font-size: 16px; color: rgba(255,255,255,0.9);
+  -webkit-tap-highlight-color: rgba(255,255,255,0.06);
+}
+.sidebar-menu-item:active { background: rgba(255,255,255,0.06); }
+.sidebar-menu-icon { width: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+#sidebar-recents-label {
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.4);
+  padding: 18px 20px 8px; letter-spacing: 0.3px;
+}
+.sidebar-chat-item {
+  padding: 13px 20px; font-size: 15px; color: rgba(255,255,255,0.85);
+  cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  -webkit-tap-highlight-color: rgba(255,255,255,0.06);
+}
+.sidebar-chat-item.active { background: rgba(255,255,255,0.08); }
+.sidebar-chat-item:active  { background: rgba(255,255,255,0.06); }
+
+#sidebar-chat-btn {
+  position: sticky; bottom: 0;
+  align-self: flex-end; margin: 16px 16px 0 auto;
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; color: #000; border: none; border-radius: 50px;
+  padding: 13px 22px; font-size: 15px; font-weight: 700; cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* Toast */
 #toast {
   position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
@@ -583,7 +668,7 @@ html, body {
   <!-- Top Navigation Bar -->
   <div id="gpt-nav">
     <div id="gpt-nav-left">
-      <button class="gpt-nav-btn">
+      <button class="gpt-nav-btn" onclick="openSidebar()">
         <svg width="17" height="13" viewBox="0 0 17 13" fill="none">
           <rect width="17" height="2" rx="1" fill="white"/>
           <rect y="5.5" width="17" height="2" rx="1" fill="white"/>
@@ -608,10 +693,14 @@ html, body {
           <path d="M17 14v6M14 17h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
       </button>
-      <!-- Dashed circle / new chat icon -->
-      <button class="gpt-nav-btn">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+      <!-- Temporary chat toggle -->
+      <button class="gpt-nav-btn" id="gpt-temp-btn" onclick="toggleTempMode()">
+        <svg id="gpt-temp-icon-off" width="19" height="19" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="8.5" stroke="white" stroke-width="1.5" stroke-dasharray="3.5 2.5"/>
+        </svg>
+        <svg id="gpt-temp-icon-on" width="19" height="19" viewBox="0 0 24 24" fill="none" style="display:none">
+          <circle cx="12" cy="12" r="8.5" stroke="white" stroke-width="1.5" stroke-dasharray="3.5 2.5"/>
+          <path d="M8 12l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
     </div>
@@ -632,6 +721,11 @@ html, body {
   <div id="gpt-ui">
     <!-- Messages -->
     <div id="gpt-messages">
+      <!-- Temporary chat disclaimer -->
+      <div id="gpt-temp-disclaimer">
+        This chat won't appear in your chat history, and won't be used to train our models. For safety, we may keep a copy of this chat for up to 30 days.
+      </div>
+
       <!-- Suggestion chip — shown before question is sent -->
       <div id="gpt-suggestion-area">
         <div id="gpt-suggestion-chip" onclick="sendQuestion()">
@@ -692,6 +786,77 @@ html, body {
       <div id="gpt-disclaimer">ChatGPT can make mistakes. Check important info.</div>
     </div>
   </div>
+</div>
+
+<!-- ═══ SIDEBAR VIEW ══════════════════════════════ -->
+<div id="view-sidebar">
+  <div id="sidebar-panel">
+    <div id="sidebar-top">
+      <div id="sidebar-title">ChatGPT</div>
+      <div id="sidebar-top-right">
+        <button id="sidebar-search">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="white" stroke-width="2"/>
+            <path d="M16.5 16.5L21 21" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div id="sidebar-avatar">AL</div>
+      </div>
+    </div>
+
+    <div class="sidebar-menu-item">
+      <span class="sidebar-menu-icon">
+        <svg width="22" height="20" viewBox="0 0 24 22" fill="none">
+          <rect x="1" y="1" width="22" height="20" rx="4" stroke="rgba(255,255,255,0.8)" stroke-width="1.8"/>
+          <path d="M1 7h22" stroke="rgba(255,255,255,0.8)" stroke-width="1.8"/>
+          <path d="M8 7v14" stroke="rgba(255,255,255,0.8)" stroke-width="1.8"/>
+        </svg>
+      </span>
+      Projects
+    </div>
+    <div class="sidebar-menu-item">
+      <span class="sidebar-menu-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="4" stroke="rgba(255,255,255,0.8)" stroke-width="1.8"/>
+          <circle cx="8.5" cy="8.5" r="2" stroke="rgba(255,255,255,0.8)" stroke-width="1.6"/>
+          <path d="M2 16l5-5 4 4 3-3 5 5" stroke="rgba(255,255,255,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      Images
+    </div>
+    <div class="sidebar-menu-item">
+      <span class="sidebar-menu-icon">
+        <svg width="22" height="6" viewBox="0 0 22 6" fill="rgba(255,255,255,0.8)">
+          <circle cx="3" cy="3" r="2.5"/>
+          <circle cx="11" cy="3" r="2.5"/>
+          <circle cx="19" cy="3" r="2.5"/>
+        </svg>
+      </span>
+      More
+    </div>
+
+    <div id="sidebar-recents-label">Recents</div>
+    <div class="sidebar-chat-item">What is Apple</div>
+    <div class="sidebar-chat-item active">Sticker stack estimate</div>
+    <div class="sidebar-chat-item">Meaning of Demise</div>
+    <div class="sidebar-chat-item">Child Abuse and Step-parents</div>
+    <div class="sidebar-chat-item">PowerShell Convert to JSON</div>
+    <div class="sidebar-chat-item">App vs Platform Debate</div>
+    <div class="sidebar-chat-item">EWS FindAppointments Body</div>
+    <div class="sidebar-chat-item">Penthouse Double Volume Calculation</div>
+    <div class="sidebar-chat-item">PowerShell Email API Integration</div>
+    <div class="sidebar-chat-item">n8n Email Trigger Setup</div>
+    <div class="sidebar-chat-item">Tengah Residence Bulk Purchase</div>
+
+    <button id="sidebar-chat-btn" onclick="closeSidebar()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+        <path d="M12 20h9" stroke="#000" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Chat
+    </button>
+  </div>
+  <div id="sidebar-backdrop" onclick="closeSidebar()"></div>
 </div>
 
 <!-- ═══ PLUS VIEW ═════════════════════════════════ -->
@@ -1408,7 +1573,8 @@ function closeAdmin() {
 function setupChatView() {
   document.querySelectorAll('#gpt-messages .gpt-user-row:not(#gpt-user-row), #gpt-messages .gpt-ai-row:not(#gpt-ai-row)')
     .forEach(el => el.remove());
-  document.getElementById('gpt-suggestion-area').style.display = 'flex';
+  document.getElementById('gpt-temp-disclaimer').style.display = 'none';
+  document.getElementById('gpt-suggestion-area').style.display = tempMode ? 'none' : 'flex';
   document.getElementById('gpt-user-row').style.display = 'none';
   document.getElementById('gpt-ai-row').style.display = 'none';
   document.getElementById('gpt-connecting').style.display = 'none';
@@ -1851,6 +2017,52 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════
+// TEMPORARY CHAT TOGGLE
+// ═══════════════════════════════════════════════════
+let tempMode = false;
+
+function toggleTempMode() {
+  tempMode = !tempMode;
+  const btn      = document.getElementById('gpt-temp-btn');
+  const iconOff  = document.getElementById('gpt-temp-icon-off');
+  const iconOn   = document.getElementById('gpt-temp-icon-on');
+  const banner   = document.getElementById('gpt-memory-banner');
+  const disc     = document.getElementById('gpt-temp-disclaimer');
+  const suggest  = document.getElementById('gpt-suggestion-area');
+  const input    = document.getElementById('gpt-input-text');
+
+  btn.classList.toggle('temp-active', tempMode);
+  iconOff.style.display = tempMode ? 'none' : '';
+  iconOn.style.display  = tempMode ? ''     : 'none';
+  banner.style.display  = tempMode ? 'none' : '';
+  input.placeholder     = tempMode ? 'Temporary chat' : 'Reply to ChatGPT';
+
+  if (tempMode && !isRevealed) {
+    suggest.style.display = 'none';
+    disc.style.display    = 'flex';
+  } else {
+    disc.style.display    = 'none';
+    if (!isRevealed) suggest.style.display = 'flex';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════
+function openSidebar() {
+  const el = document.getElementById('view-sidebar');
+  el.classList.remove('close');
+  el.classList.add('open');
+}
+
+function closeSidebar() {
+  const el = document.getElementById('view-sidebar');
+  el.classList.remove('open');
+  el.classList.add('close');
+  el.addEventListener('animationend', () => el.classList.remove('close'), { once: true });
 }
 
 // ═══════════════════════════════════════════════════
