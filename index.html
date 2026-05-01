@@ -170,7 +170,7 @@ html, body {
 }
 
 #admin-trigger {
-  position: fixed;
+  position: absolute;
   bottom: 0; left: 0;
   width: 70px; height: 70px;
   z-index: 999;
@@ -653,12 +653,13 @@ html, body {
   <div id="home-no-bg">
     <div class="icon">📱</div>
     <div>Upload your home screen<br>screenshot in Admin</div>
-    <div style="font-size:11px;opacity:0.5;margin-top:4px">Tap top-right corner ×5 for Admin</div>
+    <div style="font-size:11px;opacity:0.5;margin-top:4px">Tap bottom-left corner ×5 for Admin</div>
   </div>
   <div id="hotspot-layer">
     <!-- value hotspots injected by JS -->
   </div>
   <div id="suit-flash"></div>
+  <div id="admin-trigger"></div>
 </div>
 
 <!-- ═══ WHATCARD VIEW — Fake ChatGPT Mobile App ════ -->
@@ -1104,9 +1105,6 @@ html, body {
 </div>
 
 <div id="toast"></div>
-
-<!-- Fixed admin trigger — always on top, works from any view -->
-<div id="admin-trigger"></div>
 
 <script>
 // ═══════════════════════════════════════════════════
