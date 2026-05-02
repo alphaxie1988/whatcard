@@ -455,6 +455,10 @@ html, body {
   color: rgba(100,220,120,1);
   font-weight: 700; font-size: 13px;
 }
+.z-suit-spades   { border: 2px solid rgba(180,190,255,0.9); background: rgba(0,0,0,0.4); color: rgba(180,190,255,1); font-size: 15px; }
+.z-suit-hearts   { border: 2px solid rgba(255,100,100,0.9); background: rgba(0,0,0,0.4); color: rgba(255,100,100,1); font-size: 15px; }
+.z-suit-clubs    { border: 2px solid rgba(80,230,120,0.9);  background: rgba(0,0,0,0.4); color: rgba(80,230,120,1);  font-size: 15px; }
+.z-suit-diamonds { border: 2px solid rgba(255,210,60,0.9);  background: rgba(0,0,0,0.4); color: rgba(255,210,60,1);  font-size: 15px; }
 
 /* Pitch → Suit display */
 .pitch-dial { padding: 16px; text-align: center; }
@@ -932,7 +936,7 @@ html, body {
     <div class="adm-bar">
       <div>
         <h1>Admin</h1>
-        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v1.0.5</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:1px">v2</div>
       </div>
       <button class="adm-close" onclick="closeAdmin()">✕</button>
     </div>
@@ -964,8 +968,15 @@ html, body {
           <button id="layout-btn-2" class="adm-btn adm-btn-ghost" style="flex:1;padding:7px 0" onclick="switchLayout(2)">C</button>
         </div>
       </div>
+      <div class="adm-row" style="padding:10px 16px;gap:10px">
+        <span style="font-size:12px;color:rgba(255,255,255,0.4);flex-shrink:0">Mode</span>
+        <div style="display:flex;gap:6px;flex:1">
+          <button id="mode-btn-gyro" class="adm-btn adm-btn-gold" style="flex:1;padding:7px 0" onclick="setLayoutMode('gyro')">Gyro</button>
+          <button id="mode-btn-hotspot" class="adm-btn adm-btn-ghost" style="flex:1;padding:7px 0" onclick="setLayoutMode('hotspot')">Hotspot</button>
+        </div>
+      </div>
       <div class="adm-row" style="flex-direction:column;align-items:stretch;gap:0;padding-bottom:0">
-        <div style="font-size:12px;color:rgba(255,255,255,0.3);padding:0 0 10px">
+        <div id="hs-hint-text" style="font-size:12px;color:rgba(255,255,255,0.3);padding:0 0 10px">
           Drag zones · Drag ◢ to resize · Suit is from tilt angle
         </div>
         <div class="hs-preview-wrap" id="hs-preview">
@@ -979,7 +990,7 @@ html, body {
     </div>
 
     <!-- Pitch → Suit calibration -->
-    <div class="adm-section">
+    <div class="adm-section" id="pitch-section">
       <div class="adm-section-title">Pitch → Suit — Tilt Phone to Test</div>
       <div class="pitch-dial">
         <div class="pitch-num" id="adm-pitch-deg">0°</div>
@@ -1168,6 +1179,15 @@ function buildDefaultHotspots() {
   return hs;
 }
 
+function buildDefaultSuitZones() {
+  return {
+    spades:   { x: 2,  y: 12, w: 21, h: 10 },
+    hearts:   { x: 26, y: 12, w: 21, h: 10 },
+    clubs:    { x: 52, y: 12, w: 21, h: 10 },
+    diamonds: { x: 76, y: 12, w: 21, h: 10 },
+  };
+}
+
 // ═══════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════
@@ -1224,14 +1244,23 @@ function loadCfg() {
       if (c.activeLayout === undefined) c.activeLayout = 0;
       if (!Array.isArray(c.pitchBounds) || c.pitchBounds.length !== 2) c.pitchBounds = [33, 67];
       if (c.spectatorName === undefined) c.spectatorName = '';
+      // Migration: add mode and suits to each layout
+      c.layouts.forEach(layout => {
+        if (!layout.mode) layout.mode = 'gyro';
+        if (!layout.suits) layout.suits = buildDefaultSuitZones();
+      });
       c.hotspots = c.layouts[c.activeLayout];
       return c;
     }
   } catch(e) {}
   const defHs = buildDefaultHotspots();
+  defHs.mode = 'gyro';
+  defHs.suits = buildDefaultSuitZones();
+  const l2 = buildDefaultHotspots(); l2.mode = 'gyro'; l2.suits = buildDefaultSuitZones();
+  const l3 = buildDefaultHotspots(); l3.mode = 'gyro'; l3.suits = buildDefaultSuitZones();
   return {
     bg: null,
-    layouts: [defHs, buildDefaultHotspots(), buildDefaultHotspots()],
+    layouts: [defHs, l2, l3],
     activeLayout: 0,
     hotspots: defHs,
     pitchBounds: [33, 67],
@@ -1240,17 +1269,25 @@ function loadCfg() {
 }
 function saveCfg() { localStorage.setItem('wc_cfg', JSON.stringify(cfg)); }
 function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+function currentMode() { return cfg.hotspots?.mode || 'gyro'; }
 
 // ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
 function init() {
-  // Inject hotspot divs for each value + enter
+  // Inject hotspot divs for each value + enter + suits
   const layer = document.getElementById('hotspot-layer');
   [...VALUES, 'enter'].forEach(val => {
     const el = document.createElement('div');
     el.className = 'hotspot';
     el.id = 'hs-' + val;
+    layer.appendChild(el);
+  });
+  SUIT_ORDER.forEach(suitKey => {
+    const el = document.createElement('div');
+    el.className = 'hotspot';
+    el.id = 'hs-suit-' + suitKey;
+    el.style.display = 'none';
     layer.appendChild(el);
   });
 
@@ -1420,6 +1457,24 @@ function applyHotspots() {
     el.style.width  = z.w + '%';
     el.style.height = z.h + '%';
   });
+  const mode = currentMode();
+  const suitZones = cfg.hotspots.suits || buildDefaultSuitZones();
+  SUIT_ORDER.forEach(suitKey => {
+    const el = document.getElementById('hs-suit-' + suitKey);
+    if (!el) return;
+    if (mode === 'hotspot') {
+      const z = suitZones[suitKey];
+      if (z) {
+        el.style.left   = z.x + '%';
+        el.style.top    = z.y + '%';
+        el.style.width  = z.w + '%';
+        el.style.height = z.h + '%';
+      }
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
 }
 
 function handleBgUpload(e) {
@@ -1440,6 +1495,7 @@ function bindHotspots() {
 
   function fireHotspot(val) {
     if (val === 'enter') enterWhatCard();
+    else if (val.startsWith('suit-')) tapSuit(val.slice(5));
     else tapValue(val);
   }
 
@@ -1458,6 +1514,16 @@ function bindHotspots() {
     });
   });
 
+  SUIT_ORDER.forEach(suitKey => {
+    const el = document.getElementById('hs-suit-' + suitKey);
+    if (!el) return;
+    el.addEventListener('pointerdown', () => {
+      pressing = true;
+      lastHs   = 'suit-' + suitKey;
+      fireHotspot('suit-' + suitKey);
+    });
+  });
+
   // Fire each new hotspot the finger slides into while held down
   window.addEventListener('pointermove', e => {
     if (!pressing) return;
@@ -1472,12 +1538,32 @@ function bindHotspots() {
   window.addEventListener('pointercancel', () => { pressing = false; lastHs = null; });
 }
 
-function tapValue(val) {
-  const suitKey = pitchToSuit(currentPitch);
-  const suit    = SUITS[suitKey];
+function tapSuit(suitKey) {
+  if (currentMode() !== 'hotspot') return;
+  selectedSuit = suitKey;
+  const suit = SUITS[suitKey];
+  if (cfg.showFlash !== false) {
+    const color = suit.red ? '#e74c3c' : '#fff';
+    const flash = document.getElementById('suit-flash');
+    flash.innerHTML = `<span class="sf-sym" style="color:${color};font-size:44px">${suit.sym}</span>`;
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 600);
+  }
+  vibratePulses(suit.pulses);
+}
 
+function tapValue(val) {
+  let suitKey;
+  if (currentMode() === 'hotspot') {
+    if (!selectedSuit) { navigator.vibrate?.([40, 40, 40]); return; }
+    suitKey = selectedSuit;
+  } else {
+    suitKey = pitchToSuit(currentPitch);
+    selectedSuit = suitKey;
+  }
+
+  const suit = SUITS[suitKey];
   selectedValue = val;
-  selectedSuit  = suitKey;
 
   if (cfg.showFlash !== false) {
     const color = suit.red ? '#e74c3c' : '#fff';
@@ -1545,6 +1631,8 @@ function openAdmin() {
   document.getElementById('spectator-name').value = cfg.spectatorName || '';
   updateSpeedBtns();
   updateLayoutBtns();
+  updateModeBtns();
+  updatePitchSectionVisibility();
   initBoundHandles();
   showView('admin');
   if (!sensorActive) startSensors();
@@ -1885,7 +1973,24 @@ function syncZonesToPreview() {
   eel.innerHTML     = `<div class="hs-zone-label">▶ Enter</div><div class="rz-handle">◢</div>`;
   preview.appendChild(eel);
 
+  // Suit zones (only in hotspot mode)
+  if (currentMode() === 'hotspot') {
+    const suitZones = cfg.hotspots.suits || buildDefaultSuitZones();
+    SUIT_ORDER.forEach(suitKey => {
+      const sym = SUITS[suitKey].sym;
+      const z   = suitZones[suitKey] || buildDefaultSuitZones()[suitKey];
+      const sel = document.createElement('div');
+      sel.className     = `hs-zone z-suit-${suitKey}`;
+      sel.id            = `hz-suit-${suitKey}`;
+      sel.dataset.id    = `suit-${suitKey}`;
+      sel.style.cssText = `left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%`;
+      sel.innerHTML     = `<div class="hs-zone-label">${sym}</div><div class="rz-handle">◢</div>`;
+      preview.appendChild(sel);
+    });
+  }
+
   initZoneDrag(preview);
+  updateHintText();
 }
 
 function initZoneDrag(container) {
@@ -1950,6 +2055,19 @@ function saveHotspots() {
       h: parseFloat(el.style.height),
     };
   });
+  if (currentMode() === 'hotspot') {
+    if (!cfg.hotspots.suits) cfg.hotspots.suits = buildDefaultSuitZones();
+    SUIT_ORDER.forEach(suitKey => {
+      const el = document.getElementById('hz-suit-' + suitKey);
+      if (!el) return;
+      cfg.hotspots.suits[suitKey] = {
+        x: parseFloat(el.style.left),
+        y: parseFloat(el.style.top),
+        w: parseFloat(el.style.width),
+        h: parseFloat(el.style.height),
+      };
+    });
+  }
   cfg.layouts[cfg.activeLayout] = cfg.hotspots;
   saveCfg();
   applyHotspots();
@@ -1991,10 +2109,11 @@ function resetAll() {
   if (!confirm('Reset all settings?')) return;
   localStorage.removeItem('wc_cfg');
   localStorage.removeItem('wc_perm');
-  const defHs = buildDefaultHotspots();
+  const mkLayout = () => { const h = buildDefaultHotspots(); h.mode = 'gyro'; h.suits = buildDefaultSuitZones(); return h; };
+  const defHs = mkLayout();
   cfg = {
     bg: null,
-    layouts: [defHs, buildDefaultHotspots(), buildDefaultHotspots()],
+    layouts: [defHs, mkLayout(), mkLayout()],
     activeLayout: 0,
     hotspots: defHs,
     pitchBounds: [33, 67],
@@ -2092,14 +2211,20 @@ function switchLayout(idx) {
   saveCurrentPreviewToSlot(cfg.activeLayout);
   cfg.activeLayout = idx;
   cfg.hotspots = cfg.layouts[idx];
+  if (!cfg.hotspots.mode) cfg.hotspots.mode = 'gyro';
+  if (!cfg.hotspots.suits) cfg.hotspots.suits = buildDefaultSuitZones();
   saveCfg();
   syncZonesToPreview();
   updateLayoutBtns();
+  updateModeBtns();
+  updatePitchSectionVisibility();
   showToast(`Layout ${'ABC'[idx]} loaded`);
 }
 
 function saveCurrentPreviewToSlot(idx) {
   const layout = {};
+  const mode = currentMode();
+  layout.mode = mode;
   [...VALUES, 'enter'].forEach(val => {
     const el = document.getElementById('hz-' + val);
     if (!el) return;
@@ -2110,7 +2235,27 @@ function saveCurrentPreviewToSlot(idx) {
       h: parseFloat(el.style.height),
     };
   });
-  if (Object.keys(layout).length > 0) cfg.layouts[idx] = layout;
+  if (mode === 'hotspot') {
+    layout.suits = {};
+    SUIT_ORDER.forEach(suitKey => {
+      const el = document.getElementById('hz-suit-' + suitKey);
+      if (el) {
+        layout.suits[suitKey] = {
+          x: parseFloat(el.style.left),
+          y: parseFloat(el.style.top),
+          w: parseFloat(el.style.width),
+          h: parseFloat(el.style.height),
+        };
+      }
+    });
+    if (!Object.keys(layout.suits).length) delete layout.suits;
+  } else {
+    const existing = cfg.layouts[idx];
+    if (existing?.suits) layout.suits = existing.suits;
+  }
+  if (Object.keys(layout).filter(k => VALUES.includes(k) || k === 'enter').length > 0) {
+    cfg.layouts[idx] = layout;
+  }
 }
 
 function updateLayoutBtns() {
@@ -2119,6 +2264,39 @@ function updateLayoutBtns() {
     if (!btn) return;
     btn.className = 'adm-btn ' + (i === cfg.activeLayout ? 'adm-btn-gold' : 'adm-btn-ghost');
   });
+}
+
+function setLayoutMode(mode) {
+  cfg.hotspots.mode = mode;
+  cfg.layouts[cfg.activeLayout] = cfg.hotspots;
+  if (!cfg.hotspots.suits) cfg.hotspots.suits = buildDefaultSuitZones();
+  saveCfg();
+  updateModeBtns();
+  updatePitchSectionVisibility();
+  syncZonesToPreview();
+  if (mode === 'hotspot') selectedSuit = null;
+}
+
+function updateModeBtns() {
+  const mode = currentMode();
+  const gBtn = document.getElementById('mode-btn-gyro');
+  const hBtn = document.getElementById('mode-btn-hotspot');
+  if (!gBtn || !hBtn) return;
+  gBtn.className = 'adm-btn ' + (mode === 'gyro'    ? 'adm-btn-gold' : 'adm-btn-ghost');
+  hBtn.className = 'adm-btn ' + (mode === 'hotspot' ? 'adm-btn-gold' : 'adm-btn-ghost');
+}
+
+function updatePitchSectionVisibility() {
+  const ps = document.getElementById('pitch-section');
+  if (ps) ps.style.display = currentMode() === 'hotspot' ? 'none' : '';
+}
+
+function updateHintText() {
+  const el = document.getElementById('hs-hint-text');
+  if (!el) return;
+  el.textContent = currentMode() === 'hotspot'
+    ? 'Drag zones · Drag ◢ to resize · Tap ♠♥♣♦ to lock suit'
+    : 'Drag zones · Drag ◢ to resize · Suit is from tilt angle';
 }
 
 // ═══════════════════════════════════════════════════
