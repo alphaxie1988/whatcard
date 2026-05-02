@@ -1545,7 +1545,11 @@ function tapSuit(suitKey) {
   if (cfg.showFlash !== false) {
     const color = suit.red ? '#e74c3c' : '#fff';
     const flash = document.getElementById('suit-flash');
-    flash.innerHTML = `<span class="sf-sym" style="color:${color};font-size:44px">${suit.sym}</span>`;
+    if (selectedValue) {
+      flash.innerHTML = `<span class="sf-val" style="color:${color}">${selectedValue}</span><span class="sf-sym" style="color:${color}">${suit.sym}</span>`;
+    } else {
+      flash.innerHTML = `<span class="sf-sym" style="color:${color};font-size:44px">${suit.sym}</span>`;
+    }
     flash.classList.add('show');
     setTimeout(() => flash.classList.remove('show'), 600);
   }
@@ -1555,8 +1559,8 @@ function tapSuit(suitKey) {
 function tapValue(val) {
   let suitKey;
   if (currentMode() === 'hotspot') {
-    if (!selectedSuit) { navigator.vibrate?.([40, 40, 40]); return; }
-    suitKey = selectedSuit;
+    suitKey = selectedSuit || 'spades';
+    selectedSuit = suitKey;
   } else {
     suitKey = pitchToSuit(currentPitch);
     selectedSuit = suitKey;
