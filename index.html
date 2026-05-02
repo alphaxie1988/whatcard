@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-visual">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ChatGPT">
@@ -1202,6 +1202,8 @@ let sensorActive  = false;
 let isRevealed    = false;
 let hasRecovered  = false;
 
+let _baseVH = 0;
+
 let adminTaps = 0, adminTimer = null;
 let chatBackTaps = 0, chatBackTimer = null;
 let wakeLock = null;
@@ -1329,7 +1331,24 @@ function init() {
     startSensors();
   }
 
+  initViewportHandler();
+
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ═══════════════════════════════════════════════════
+// VIEWPORT — keep nav visible when keyboard opens
+// ═══════════════════════════════════════════════════
+function initViewportHandler() {
+  if (!window.visualViewport) return;
+  _baseVH = window.visualViewport.height;
+  window.visualViewport.addEventListener('resize', () => {
+    const vvh = window.visualViewport.height;
+    if (vvh > _baseVH) _baseVH = vvh;
+    const kbH = Math.max(0, _baseVH - vvh);
+    const wc = document.getElementById('view-whatcard');
+    if (wc) wc.style.bottom = (kbH > 80 ? kbH : 0) + 'px';
+  });
 }
 
 // ═══════════════════════════════════════════════════
