@@ -296,6 +296,8 @@ html, body {
   font-family: inherit; caret-color: white; min-width: 0;
 }
 #gpt-input-text::placeholder { color: rgba(255,255,255,0.32); }
+#gpt-input-text::-webkit-search-cancel-button,
+#gpt-input-text::-webkit-search-decoration { display: none; -webkit-appearance: none; }
 #gpt-mic-btn {
   width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -759,7 +761,7 @@ html, body {
     <div id="gpt-footer">
       <div id="gpt-input-row">
         <div id="gpt-input-add">+</div>
-        <input id="gpt-input-text" type="text" placeholder="Reply to ChatGPT"
+        <input id="gpt-input-text" type="search" placeholder="Reply to ChatGPT"
                autocomplete="off" autocorrect="off" autocapitalize="sentences"
                inputmode="text" data-form-type="other"
                onkeydown="if(event.key==='Enter')submitInput()"
