@@ -354,6 +354,7 @@ html, body {
 #gpt-suggestion-area {
   margin-top: auto; padding-bottom: 8px;
   display: flex; flex-direction: column; gap: 10px;
+  transition: opacity 0.2s ease;
 }
 #gpt-suggestion-chip {
   background: transparent;
@@ -1686,7 +1687,10 @@ function setupChatView() {
   document.querySelectorAll('#gpt-messages .gpt-user-row:not(#gpt-user-row), #gpt-messages .gpt-ai-row:not(#gpt-ai-row)')
     .forEach(el => el.remove());
   document.getElementById('gpt-temp-disclaimer').style.display = 'none';
-  document.getElementById('gpt-suggestion-area').style.display = tempMode ? 'none' : 'flex';
+  const suggestArea = document.getElementById('gpt-suggestion-area');
+  suggestArea.style.display = tempMode ? 'none' : 'flex';
+  suggestArea.style.opacity = '1';
+  suggestArea.style.pointerEvents = '';
   document.getElementById('gpt-user-row').style.display = 'none';
   document.getElementById('gpt-ai-row').style.display = 'none';
   document.getElementById('gpt-connecting').style.display = 'none';
@@ -1722,7 +1726,9 @@ function toggleSendBtn(val) {
   document.getElementById('gpt-send-btn').style.display   = hasText ? 'flex' : 'none';
   const questionSent = document.getElementById('gpt-user-row').style.display !== 'none';
   if (!questionSent && !tempMode) {
-    document.getElementById('gpt-suggestion-area').style.display = hasText ? 'none' : 'flex';
+    const area = document.getElementById('gpt-suggestion-area');
+    area.style.opacity = hasText ? '0' : '1';
+    area.style.pointerEvents = hasText ? 'none' : '';
   }
 }
 
