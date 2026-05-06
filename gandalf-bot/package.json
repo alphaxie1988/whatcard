@@ -1,0 +1,15 @@
+{
+  "name": "gandalf-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "gandalf.js",
+  "scripts": {
+    "start": "node gandalf.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}
