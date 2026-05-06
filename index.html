@@ -1720,6 +1720,10 @@ function toggleSendBtn(val) {
   const hasText = val.trim().length > 0;
   document.getElementById('gpt-record-btn').style.display = hasText ? 'none' : 'flex';
   document.getElementById('gpt-send-btn').style.display   = hasText ? 'flex' : 'none';
+  const questionSent = document.getElementById('gpt-user-row').style.display !== 'none';
+  if (!questionSent && !tempMode) {
+    document.getElementById('gpt-suggestion-area').style.display = hasText ? 'none' : 'flex';
+  }
 }
 
 function submitInput() {
